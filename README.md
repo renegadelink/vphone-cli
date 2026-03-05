@@ -18,13 +18,15 @@ Boot a virtual iPhone (iOS 26) via Apple's Virtualization.framework using PCC re
 
 Three patch variants are available with increasing levels of security bypass:
 
-| Variant             | Boot Chain |    CFW    | Make Targets                       |
-| ------------------- | :--------: | :-------: | ---------------------------------- |
-| **Regular**         | 38 patches | 10 phases | `fw_patch` + `cfw_install`         |
-| **Development**     | 47 patches | 12 phases | `fw_patch_dev` + `cfw_install_dev` |
-| **Jailbreak (WIP)** | 84 patches | 14 phases | `fw_patch_jb` + `cfw_install_jb`   |
+| Variant             |   Boot Chain    |    CFW    | Make Targets                       |
+| ------------------- | :-------------: | :-------: | ---------------------------------- |
+| **Regular**         |   41 patches    | 10 phases | `fw_patch` + `cfw_install`         |
+| **Development**     |   52 patches    | 12 phases | `fw_patch_dev` + `cfw_install_dev` |
+| **Jailbreak (WIP)** | 66 / 78 patches | 14 phases | `fw_patch_jb` + `cfw_install_jb`   |
 
-See [research/patch_comparison_all_variants.md](./research/patch_comparison_all_variants.md) for the detailed per-component breakdown.
+`66` = default JB kernel method plan; `78` = default + optional kernel methods (`VPHONE_JB_ENABLE_OPTIONAL=1`).
+
+See [research/00_patch_comparison_all_variants.md](./research/00_patch_comparison_all_variants.md) for the detailed per-component breakdown.
 
 ## Prerequisites
 
@@ -35,7 +37,7 @@ See [research/patch_comparison_all_variants.md](./research/patch_comparison_all_
 Boot into Recovery (long press power button), open Terminal, then choose one setup path:
 
 - **Option 1: Fully disable SIP + AMFI boot-arg (most permissive)**
-  
+
   In Recovery:
 
   ```bash
@@ -52,7 +54,7 @@ Boot into Recovery (long press power button), open Terminal, then choose one set
   Restart once more.
 
 - **Option 2: Keep SIP mostly enabled, disable only debug restrictions, use [`amfidont`](https://github.com/zqxwce/amfidont)**
-  
+
   In Recovery:
 
   ```bash

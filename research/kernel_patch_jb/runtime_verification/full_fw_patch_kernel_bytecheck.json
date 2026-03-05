@@ -1,0 +1,1024 @@
+{
+  "summary": {
+    "original_kernel": "/Users/qaq/Documents/Firmwares/PCC-CloudOS-26.3-23D128/kernelcache.research.vphone600",
+    "patched_kernel": "/tmp/vphone_fw_patch_fullcheck/iPhoneTest_Restore/kernelcache.research.vphone600",
+    "base_patch_count": 28,
+    "jb_patch_count": 73,
+    "total_expected": 101,
+    "verified_ok": 101,
+    "mismatch_count": 0
+  },
+  "mismatches": [],
+  "results": [
+    {
+      "scope": "base",
+      "offset": 38320848,
+      "offset_hex": "0x0248BAD0",
+      "size": 4,
+      "desc": "NOP tbnz w8, #5, #0x248bcd8 (sealed vol check) [_apfs_vfsop_mount]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37637988,
+      "offset_hex": "0x023E4F64",
+      "size": 4,
+      "desc": "NOP tbnz (seal broken) [_authapfs_seal_is_broken]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 16218508,
+      "offset_hex": "0x00F7798C",
+      "size": 4,
+      "desc": "NOP cbnz (rootvp auth) [_bsd_init]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 23357644,
+      "offset_hex": "0x016468CC",
+      "size": 4,
+      "desc": "mov w0,#0 [_proc_check_launch_constraints]",
+      "expected_hex": "00008052",
+      "got_hex": "00008052",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 23357648,
+      "offset_hex": "0x016468D0",
+      "size": 4,
+      "desc": "ret [_proc_check_launch_constraints]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 19729848,
+      "offset_hex": "0x012D0DB8",
+      "size": 4,
+      "desc": "mov x0,#1 [_PE_i_can_has_debugger]",
+      "expected_hex": "200080d2",
+      "got_hex": "200080d2",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 19729852,
+      "offset_hex": "0x012D0DBC",
+      "size": 4,
+      "desc": "ret [_PE_i_can_has_debugger]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 16794536,
+      "offset_hex": "0x010043A8",
+      "size": 4,
+      "desc": "NOP tbnz w8, #0, #0x1004490 [txm post-validation]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 23390304,
+      "offset_hex": "0x0164E860",
+      "size": 4,
+      "desc": "cmp w0,w0 (was cmp w0, #2) [postValidation]",
+      "expected_hex": "1f00006b",
+      "got_hex": "1f00006b",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 23393136,
+      "offset_hex": "0x0164F370",
+      "size": 4,
+      "desc": "mov w0,#1 (was BL) [_check_dyld_policy_internal @1]",
+      "expected_hex": "20008052",
+      "got_hex": "20008052",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 23393148,
+      "offset_hex": "0x0164F37C",
+      "size": 4,
+      "desc": "mov w0,#1 (was BL) [_check_dyld_policy_internal @2]",
+      "expected_hex": "20008052",
+      "got_hex": "20008052",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37966492,
+      "offset_hex": "0x0243529C",
+      "size": 4,
+      "desc": "mov w0,#0 [_apfs_graft]",
+      "expected_hex": "00008052",
+      "got_hex": "00008052",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 38314416,
+      "offset_hex": "0x0248A1B0",
+      "size": 4,
+      "desc": "cmp x0,x0 (was cmp x0, x8) [_apfs_vfsop_mount]",
+      "expected_hex": "1f0000eb",
+      "got_hex": "1f0000eb",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 38321516,
+      "offset_hex": "0x0248BD6C",
+      "size": 4,
+      "desc": "mov w0,#0 [_apfs_mount_upgrade_checks]",
+      "expected_hex": "00008052",
+      "got_hex": "00008052",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 38410604,
+      "offset_hex": "0x024A196C",
+      "size": 4,
+      "desc": "mov w0,#0 [_handle_fsioc_graft]",
+      "expected_hex": "00008052",
+      "got_hex": "00008052",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 38403260,
+      "offset_hex": "0x0249FCBC",
+      "size": 4,
+      "desc": "NOP [handle_get_dev_by_role context check -> 0x249FD44]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 38403280,
+      "offset_hex": "0x0249FCD0",
+      "size": 4,
+      "desc": "NOP [handle_get_dev_by_role entitlement check -> 0x249FD44]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 38403472,
+      "offset_hex": "0x0249FD90",
+      "size": 4,
+      "desc": "NOP [handle_get_dev_by_role entitlement check -> 0x249FF18]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37492248,
+      "offset_hex": "0x023C1618",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_file_check_mmap]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37492252,
+      "offset_hex": "0x023C161C",
+      "size": 4,
+      "desc": "ret [_hook_file_check_mmap]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37485640,
+      "offset_hex": "0x023BFC48",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_mount_check_mount]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37485644,
+      "offset_hex": "0x023BFC4C",
+      "size": 4,
+      "desc": "ret [_hook_mount_check_mount]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37485200,
+      "offset_hex": "0x023BFA90",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_mount_check_remount]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37485204,
+      "offset_hex": "0x023BFA94",
+      "size": 4,
+      "desc": "ret [_hook_mount_check_remount]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37484796,
+      "offset_hex": "0x023BF8FC",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_mount_check_umount]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37484800,
+      "offset_hex": "0x023BF900",
+      "size": 4,
+      "desc": "ret [_hook_mount_check_umount]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37463556,
+      "offset_hex": "0x023BA604",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_rename]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "base",
+      "offset": 37463560,
+      "offset_hex": "0x023BA608",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_rename]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23337744,
+      "offset_hex": "0x01641B10",
+      "size": 4,
+      "desc": "mov x0,#1 [AMFIIsCDHashInTrustCache]",
+      "expected_hex": "200080d2",
+      "got_hex": "200080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23337748,
+      "offset_hex": "0x01641B14",
+      "size": 4,
+      "desc": "cbz x2,+8 [AMFIIsCDHashInTrustCache]",
+      "expected_hex": "420000b4",
+      "got_hex": "420000b4",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23337752,
+      "offset_hex": "0x01641B18",
+      "size": 4,
+      "desc": "str x0,[x2] [AMFIIsCDHashInTrustCache]",
+      "expected_hex": "400000f9",
+      "got_hex": "400000f9",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23337756,
+      "offset_hex": "0x01641B1C",
+      "size": 4,
+      "desc": "ret [AMFIIsCDHashInTrustCache]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23372684,
+      "offset_hex": "0x0164A38C",
+      "size": 4,
+      "desc": "mov w0,#0 [AMFI kill return \u2192 allow]",
+      "expected_hex": "00008052",
+      "got_hex": "00008052",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23371520,
+      "offset_hex": "0x01649F00",
+      "size": 4,
+      "desc": "mov x0,xzr [_cred_label_update_execve low-risk]",
+      "expected_hex": "e0031faa",
+      "got_hex": "e0031faa",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23371524,
+      "offset_hex": "0x01649F04",
+      "size": 4,
+      "desc": "retab [_cred_label_update_execve low-risk]",
+      "expected_hex": "ff0f5fd6",
+      "got_hex": "ff0f5fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37547240,
+      "offset_hex": "0x023CECE8",
+      "size": 4,
+      "desc": "mov x0,xzr [_hook_cred_label_update_execve low-risk]",
+      "expected_hex": "e0031faa",
+      "got_hex": "e0031faa",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37547244,
+      "offset_hex": "0x023CECEC",
+      "size": 4,
+      "desc": "retab [_hook_cred_label_update_execve low-risk]",
+      "expected_hex": "ff0f5fd6",
+      "got_hex": "ff0f5fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 7644576,
+      "offset_hex": "0x0074A5A0",
+      "size": 8,
+      "desc": "sysent[439].sy_call = _nosys 0xF6F048 (auth rebase, div=0xBCAD, next=2) [kcall10 low-risk]",
+      "expected_hex": "48f0f600adbc1080",
+      "got_hex": "48f0f600adbc1080",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 7644592,
+      "offset_hex": "0x0074A5B0",
+      "size": 4,
+      "desc": "sysent[439].sy_return_type = 1 [kcall10 low-risk]",
+      "expected_hex": "01000000",
+      "got_hex": "01000000",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 7644596,
+      "offset_hex": "0x0074A5B4",
+      "size": 4,
+      "desc": "sysent[439].sy_narg=0,sy_arg_bytes=0 [kcall10 low-risk]",
+      "expected_hex": "00000000",
+      "got_hex": "00000000",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 23316320,
+      "offset_hex": "0x0163C760",
+      "size": 4,
+      "desc": "cmp w0,w0 [postValidation additional fallback]",
+      "expected_hex": "1f00006b",
+      "got_hex": "1f00006b",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37398244,
+      "offset_hex": "0x023AA6E4",
+      "size": 4,
+      "desc": "mov x0,xzr [_syscallmask_apply_to_proc low-risk]",
+      "expected_hex": "e0031faa",
+      "got_hex": "e0031faa",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37398248,
+      "offset_hex": "0x023AA6E8",
+      "size": 4,
+      "desc": "retab [_syscallmask_apply_to_proc low-risk]",
+      "expected_hex": "ff0f5fd6",
+      "got_hex": "ff0f5fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 11584512,
+      "offset_hex": "0x00B0C400",
+      "size": 4,
+      "desc": "cmp xzr,xzr [_task_conversion_eval_internal]",
+      "expected_hex": "ff031feb",
+      "got_hex": "ff031feb",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37441808,
+      "offset_hex": "0x023B5110",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_getattr]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37441812,
+      "offset_hex": "0x023B5114",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_getattr]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37439164,
+      "offset_hex": "0x023B46BC",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_proc_check_get_cs_info]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37439168,
+      "offset_hex": "0x023B46C0",
+      "size": 4,
+      "desc": "ret [_hook_proc_check_get_cs_info]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37438616,
+      "offset_hex": "0x023B4498",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_proc_check_set_cs_info]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37438620,
+      "offset_hex": "0x023B449C",
+      "size": 4,
+      "desc": "ret [_hook_proc_check_set_cs_info]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37437516,
+      "offset_hex": "0x023B404C",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_proc_check_set_cs_info2]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37437520,
+      "offset_hex": "0x023B4050",
+      "size": 4,
+      "desc": "ret [_hook_proc_check_set_cs_info2]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37437172,
+      "offset_hex": "0x023B3EF4",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_chroot]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37437176,
+      "offset_hex": "0x023B3EF8",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_chroot]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37436456,
+      "offset_hex": "0x023B3C28",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_create]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37436460,
+      "offset_hex": "0x023B3C2C",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_create]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37436068,
+      "offset_hex": "0x023B3AA4",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_deleteextattr]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37436072,
+      "offset_hex": "0x023B3AA8",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_deleteextattr]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37435168,
+      "offset_hex": "0x023B3720",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_exchangedata]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37435172,
+      "offset_hex": "0x023B3724",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_exchangedata]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37540204,
+      "offset_hex": "0x023CD16C",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_exec]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37540208,
+      "offset_hex": "0x023CD170",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_exec]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37434720,
+      "offset_hex": "0x023B3560",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_getattrlist]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37434724,
+      "offset_hex": "0x023B3564",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_getattrlist]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37434372,
+      "offset_hex": "0x023B3404",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_getextattr]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37434376,
+      "offset_hex": "0x023B3408",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_getextattr]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37433628,
+      "offset_hex": "0x023B311C",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_ioctl]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37433632,
+      "offset_hex": "0x023B3120",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_ioctl]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37431900,
+      "offset_hex": "0x023B2A5C",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_link]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37431904,
+      "offset_hex": "0x023B2A60",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_link]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37431512,
+      "offset_hex": "0x023B28D8",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_listextattr]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37431516,
+      "offset_hex": "0x023B28DC",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_listextattr]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37430928,
+      "offset_hex": "0x023B2690",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_open]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37430932,
+      "offset_hex": "0x023B2694",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_open]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37430584,
+      "offset_hex": "0x023B2538",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_readlink]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37430588,
+      "offset_hex": "0x023B253C",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_readlink]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37429208,
+      "offset_hex": "0x023B1FD8",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_setattrlist]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37429212,
+      "offset_hex": "0x023B1FDC",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_setattrlist]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37428820,
+      "offset_hex": "0x023B1E54",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_setextattr]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37428824,
+      "offset_hex": "0x023B1E58",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_setextattr]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37428204,
+      "offset_hex": "0x023B1BEC",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_setflags]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37428208,
+      "offset_hex": "0x023B1BF0",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_setflags]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37427544,
+      "offset_hex": "0x023B1958",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_setmode]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37427548,
+      "offset_hex": "0x023B195C",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_setmode]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37427200,
+      "offset_hex": "0x023B1800",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_setowner]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37427204,
+      "offset_hex": "0x023B1804",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_setowner]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37426856,
+      "offset_hex": "0x023B16A8",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_setutimes]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37426860,
+      "offset_hex": "0x023B16AC",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_setutimes]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37426496,
+      "offset_hex": "0x023B1540",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_stat]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37426500,
+      "offset_hex": "0x023B1544",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_stat]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37426136,
+      "offset_hex": "0x023B13D8",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_truncate]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37426140,
+      "offset_hex": "0x023B13DC",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_truncate]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37425408,
+      "offset_hex": "0x023B1100",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_unlink]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37425412,
+      "offset_hex": "0x023B1104",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_unlink]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37419800,
+      "offset_hex": "0x023AFB18",
+      "size": 4,
+      "desc": "mov x0,#0 [_hook_vnode_check_fsgetpath]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 37419804,
+      "offset_hex": "0x023AFB1C",
+      "size": 4,
+      "desc": "ret [_hook_vnode_check_fsgetpath]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 17221104,
+      "offset_hex": "0x0106C5F0",
+      "size": 4,
+      "desc": "mov x0,#0 [_proc_security_policy]",
+      "expected_hex": "000080d2",
+      "got_hex": "000080d2",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 17221108,
+      "offset_hex": "0x0106C5F4",
+      "size": 4,
+      "desc": "ret [_proc_security_policy]",
+      "expected_hex": "c0035fd6",
+      "got_hex": "c0035fd6",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 17211192,
+      "offset_hex": "0x01069F38",
+      "size": 4,
+      "desc": "NOP [_proc_pidinfo pid-0 guard A]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 17211200,
+      "offset_hex": "0x01069F40",
+      "size": 4,
+      "desc": "NOP [_proc_pidinfo pid-0 guard B]",
+      "expected_hex": "1f2003d5",
+      "got_hex": "1f2003d5",
+      "ok": true
+    },
+    {
+      "scope": "jb",
+      "offset": 11591936,
+      "offset_hex": "0x00B0E100",
+      "size": 4,
+      "desc": "b 0xB0E154 [_convert_port_to_map skip panic]",
+      "expected_hex": "15000014",
+      "got_hex": "15000014",
+      "ok": true
+    }
+  ]
+}

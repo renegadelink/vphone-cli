@@ -1,6 +1,6 @@
 """Mixin: KernelJBPatchKcall10Mixin."""
 
-from .kernel_jb_base import asm, _rd32, _rd64, RET, NOP, struct
+from .kernel_jb_base import _rd64, struct
 
 # Max sysent entries in XNU (dispatch clamps at 0x22E = 558).
 _SYSENT_MAX_ENTRIES = 558
@@ -110,17 +110,12 @@ class KernelJBPatchKcall10Mixin:
         return (raw_val >> 51) & 0xFFF
 
     def patch_kcall10(self):
-        """Replace SYS_kas_info (syscall 439) with kcall10 shellcode.
+        """Low-risk safe stub for syscall 439.
 
-        Anchor: find _nosys function by pattern, then search DATA segments
-        for the sysent table base (backward scan from first _nosys entry).
-
-        The sysent dispatch uses BLRAA X8, X17 with X17=0xBCAD, so all
-        sy_call pointers must be PAC-signed with key=IA, diversity=0xBCAD,
-        addrDiv=0.  We encode the cave pointer as a proper auth rebase
-        chained fixup entry to match.
+        Instead of injecting an arbitrary-call shellcode trampoline, route
+        syscall 439 to `_nosys` with valid chained-fixup auth encoding.
         """
-        self._log("\n[JB] kcall10: syscall 439 replacement")
+        self._log("\n[JB] kcall10: low-risk nosys stub")
 
         # Find _nosys
         nosys_off = self._resolve_symbol("_nosys")
@@ -131,14 +126,6 @@ class KernelJBPatchKcall10Mixin:
             return False
 
         self._log(f"  [+] _nosys at 0x{nosys_off:X}")
-
-        # Find _munge_wwwwwwww
-        munge_off = self._resolve_symbol("_munge_wwwwwwww")
-        if munge_off < 0:
-            for sym, off in self.symbols.items():
-                if "munge_wwwwwwww" in sym:
-                    munge_off = off
-                    break
 
         # Find sysent table (real base via backward scan)
         sysent_off = self._find_sysent_table(nosys_off)
@@ -151,60 +138,7 @@ class KernelJBPatchKcall10Mixin:
         # Entry 439 (SYS_kas_info)
         entry_439 = sysent_off + 439 * _SYSENT_ENTRY_SIZE
 
-        # Find code cave for kcall10 shellcode (~128 bytes = 32 instructions)
-        cave = self._find_code_cave(128)
-        if cave < 0:
-            self._log("  [-] no code cave found")
-            return False
-
-        # Build kcall10 shellcode
-        # Syscall args arrive via the saved state on the stack.
-        # arg[0] = pointer to a userspace buffer with {func_ptr, arg0..arg9}.
-        # We unpack, call func_ptr(arg0..arg9), write results back.
-        parts = [
-            asm("ldr x10, [sp, #0x40]"),         # 0
-            asm("ldp x0, x1, [x10, #0]"),        # 1
-            asm("ldp x2, x3, [x10, #0x10]"),     # 2
-            asm("ldp x4, x5, [x10, #0x20]"),     # 3
-            asm("ldp x6, x7, [x10, #0x30]"),     # 4
-            asm("ldp x8, x9, [x10, #0x40]"),     # 5
-            asm("ldr x10, [x10, #0x50]"),         # 6
-            asm("mov x16, x0"),                   # 7
-            asm("mov x0, x1"),                    # 8
-            asm("mov x1, x2"),                    # 9
-            asm("mov x2, x3"),                    # 10
-            asm("mov x3, x4"),                    # 11
-            asm("mov x4, x5"),                    # 12
-            asm("mov x5, x6"),                    # 13
-            asm("mov x6, x7"),                    # 14
-            asm("mov x7, x8"),                    # 15
-            asm("mov x8, x9"),                    # 16
-            asm("mov x9, x10"),                   # 17
-            asm("stp x29, x30, [sp, #-0x10]!"),  # 18
-            bytes([0x00, 0x02, 0x3F, 0xD6]),      # 19: BLR x16
-            asm("ldp x29, x30, [sp], #0x10"),     # 20
-            asm("ldr x11, [sp, #0x40]"),          # 21
-            NOP,                                   # 22
-            asm("stp x0, x1, [x11, #0]"),         # 23
-            asm("stp x2, x3, [x11, #0x10]"),      # 24
-            asm("stp x4, x5, [x11, #0x20]"),      # 25
-            asm("stp x6, x7, [x11, #0x30]"),      # 26
-            asm("stp x8, x9, [x11, #0x40]"),      # 27
-            asm("str x10, [x11, #0x50]"),          # 28
-            asm("mov x0, #0"),                     # 29
-            asm("ret"),                             # 30
-            NOP,                                    # 31
-        ]
-
-        for i, part in enumerate(parts):
-            self.emit(cave + i * 4, part, f"shellcode+{i * 4} [kcall10]")
-
-        # ── Patch sysent[439] with proper chained fixup encoding ────────
-        #
-        # The old code wrote raw VAs (struct.pack("<Q", cave_va)) which
-        # breaks the chained fixup chain and produces invalid PAC-signed
-        # pointers.  We now encode as auth rebase pointers matching the
-        # dispatch's BLRAA X8, X17 (X17=0xBCAD).
+        # Patch sysent[439] to _nosys with proper chained auth pointer.
 
         # Read original raw value to preserve the chain 'next' field
         old_sy_call_raw = _rd64(self.raw, entry_439)
@@ -213,44 +147,28 @@ class KernelJBPatchKcall10Mixin:
         self.emit(
             entry_439,
             self._encode_chained_auth_ptr(
-                cave,
+                nosys_off,
                 next_val=call_next,
                 diversity=_SYSENT_PAC_DIVERSITY,
                 key=0,       # IA
                 addr_div=0,  # fixed discriminator (not address-blended)
             ),
-            f"sysent[439].sy_call = cave 0x{cave:X} "
-            f"(auth rebase, div=0xBCAD, next={call_next}) [kcall10]",
+            f"sysent[439].sy_call = _nosys 0x{nosys_off:X} "
+            f"(auth rebase, div=0xBCAD, next={call_next}) [kcall10 low-risk]",
         )
 
-        if munge_off >= 0:
-            old_sy_munge_raw = _rd64(self.raw, entry_439 + 8)
-            munge_next = self._extract_chain_next(old_sy_munge_raw)
-            self.emit(
-                entry_439 + 8,
-                self._encode_chained_auth_ptr(
-                    munge_off,
-                    next_val=munge_next,
-                    diversity=_SYSENT_PAC_DIVERSITY,
-                    key=0,
-                    addr_div=0,
-                ),
-                f"sysent[439].sy_munge32 = 0x{munge_off:X} "
-                f"(auth rebase, next={munge_next}) [kcall10]",
-            )
-
-        # sy_return_type = SYSCALL_RET_UINT64_T (7)
+        # sy_return_type = SYSCALL_RET_INT_T (1)
         self.emit(
             entry_439 + 16,
-            struct.pack("<I", 7),
-            "sysent[439].sy_return_type = 7 [kcall10]",
+            struct.pack("<I", 1),
+            "sysent[439].sy_return_type = 1 [kcall10 low-risk]",
         )
 
-        # sy_narg = 8, sy_arg_bytes = 0x20
+        # sy_narg = 0, sy_arg_bytes = 0
         self.emit(
             entry_439 + 20,
-            struct.pack("<I", 0x200008),
-            "sysent[439].sy_narg=8,sy_arg_bytes=0x20 [kcall10]",
+            struct.pack("<I", 0),
+            "sysent[439].sy_narg=0,sy_arg_bytes=0 [kcall10 low-risk]",
         )
 
         return True

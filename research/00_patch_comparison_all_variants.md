@@ -6,6 +6,21 @@ Three firmware variants are available, each building on the previous:
 - **Development** (`make fw_patch_dev` + `make cfw_install_dev`) — Regular + TXM entitlement/developer-mode bypasses + launchd jetsam fix. Enables debugging and code signing flexibility without full jailbreak.
 - **Jailbreak** (`make fw_patch_jb` + `make cfw_install_jb`) — Regular + comprehensive security bypass across iBSS, TXM, kernel, and userland. Full code execution, sandbox escape, and package management.
 
+## JB Patch Docs Framework Status (2026-03-05)
+
+- Completed a full framework-standardization pass for all `research/kernel_patch_jb/patch_*.md` docs.
+- All 25 JB patch docs now include:
+  - patch goal
+  - target function location
+  - kernel source file location (with confidence)
+  - function call stack
+  - patch hit points (before/after)
+  - patch search logic
+  - pseudocode before/after
+  - static validation evidence
+  - expected failure/panic if unpatched
+  - symbol consistency + confidence notes
+
 ## Boot Chain Patches
 
 ### AVPBooter
@@ -65,7 +80,17 @@ TXM patch composition by variant:
 
 ### Kernelcache
 
-Regular and Dev share the same 28 base kernel patches. JB adds 34 additional patches.
+Regular and Dev share the same 28 base kernel patches. JB currently has 25 JB-only methods:
+
+- 13 methods enabled by default (`KernelJBPatcher._DEFAULT_METHODS`)
+- 12 methods opt-in via `VPHONE_JB_ENABLE_OPTIONAL=1` (`KernelJBPatcher._OPTIONAL_METHODS`)
+
+Temporary branch override (`startup-hang-fix`, 2026-03-06):
+
+- Base defaults restored (confirmed working in user validation for base/dev).
+- JB defaults currently hard-disable:
+  - `patch_sandbox_hooks_extended`
+  - `patch_iouc_failed_macf`
 
 #### Base patches (all variants)
 
@@ -87,42 +112,45 @@ Regular and Dev share the same 28 base kernel patches. JB adds 34 additional pat
 | 17–26 | `mov x0,#0; ret` (5 hooks) | Sandbox MACF ops table           | Stub 5 sandbox hooks                                                                      |    Y    |  Y  |  Y  |
 
 Base-patch verification note (2026-03-05):
+
 - Non-JB validation report for #1-#5 (clean `fw_prepare` kernel, locator uniqueness + IDA path checks):
-  [`research/kernel_patch_base_first5_validation_2026-03-05.md`](kernel_patch_base_first5_validation_2026-03-05.md)
+  [`research/kernel_patch_base_first5_validation.md`](kernel_patch_base_first5_validation.md)
 - Non-JB validation report for #16-#20 (APFS get-dev-by-role deny gates + sandbox `file_check_mmap`/`mount_check_mount`):
-  [`research/kernel_patch_base_16_20_validation_2026-03-05.md`](kernel_patch_base_16_20_validation_2026-03-05.md)
+  [`research/kernel_patch_base_16_20_validation.md`](kernel_patch_base_16_20_validation.md)
 - Non-JB validation report for #11-#15 (dyld/apfs-graft/mount-upgrade/fsioc-graft target-site checks):
-  [`research/kernel_patch_base_11_15_validation_2026-03-05.md`](kernel_patch_base_11_15_validation_2026-03-05.md)
+  [`research/kernel_patch_base_11_15_validation.md`](kernel_patch_base_11_15_validation.md)
 - Non-JB validation report for #21-#26 (remaining sandbox hook index-to-entry verification):
-  [`research/kernel_patch_sandbox_hooks_21_26_validation_2026-03-05.md`](kernel_patch_sandbox_hooks_21_26_validation_2026-03-05.md)
+  [`research/kernel_patch_sandbox_hooks_21_26_validation.md`](kernel_patch_sandbox_hooks_21_26_validation.md)
 
 #### JB-only kernel patches
 
-| #   | Patch                        | Function                             | Purpose                                    | Regular | Dev | JB  |
-| --- | ---------------------------- | ------------------------------------ | ------------------------------------------ | :-----: | :-: | :-: |
-| 26  | Function rewrite             | `AMFIIsCDHashInTrustCache`           | Always return true + store hash            |    —    |  —  |  Y  |
-| 27  | Shellcode + branch           | `_cred_label_update_execve`          | Set cs_flags (platform+entitlements)       |    —    |  —  |  Y  |
-| 28  | `cmp w0,w0`                  | `_postValidation` (additional)       | Force validation pass                      |    —    |  —  |  Y  |
-| 29  | Shellcode + branch           | `_syscallmask_apply_to_proc`         | Patch zalloc_ro_mut for syscall mask (legacy-signature mismatch on current fw; temporarily skipped) |    —    |  —  | SKIP |
-| 30  | Inline trampoline + cave     | `_hook_cred_label_update_execve`     | vnode_getattr ownership + suid propagation |    —    |  —  |  Y  |
-| 31  | `mov x0,#0; ret` (20+ hooks) | Sandbox MACF ops (extended)          | Stub remaining 20+ sandbox hooks           |    —    |  —  |  Y  |
-| 32  | `cmp xzr,xzr`                | `_task_conversion_eval_internal`     | Allow task conversion                      |    —    |  —  |  Y  |
-| 33  | `mov x0,#0; ret`             | `_proc_security_policy`              | Bypass security policy                     |    —    |  —  |  Y  |
-| 34  | NOP (2x)                     | `_proc_pidinfo`                      | Allow pid 0 info                           |    —    |  —  |  Y  |
-| 35  | `b` (skip panic)             | `_convert_port_to_map_with_flavor`   | Skip kernel map panic                      |    —    |  —  |  Y  |
-| 36  | NOP                          | `_vm_fault_enter_prepare`            | Skip fault check                           |    —    |  —  |  Y  |
-| 37  | `b` (skip check)             | `_vm_map_protect`                    | Allow VM protect                           |    —    |  —  |  Y  |
-| 38  | NOP deny-branch (+optional `mov x8,xzr`) | `___mac_mount`             | Bypass MAC mount deny path (strict site)   |    —    |  —  |  Y  |
-| 39  | NOP (strict in-function match) | `_dounmount`                       | Allow unmount (unsafe broad fallback removed) |    —    |  —  |  Y  |
-| 40  | `mov x0,#0`                  | `_bsd_init` (2nd)                    | Skip auth at @%s:%d                        |    —    |  —  |  Y  |
-| 41  | NOP (2x)                     | `_spawn_validate_persona`            | Skip persona validation                    |    —    |  —  |  Y  |
-| 42  | NOP                          | `_task_for_pid`                      | Allow task_for_pid                         |    —    |  —  |  Y  |
-| 43  | `b` (skip check)             | `_load_dylinker`                     | Allow dylinker loading                     |    —    |  —  |  Y  |
-| 44  | `cmp x0,x0`                  | `_shared_region_map_and_slide_setup` | Force shared region                        |    —    |  —  |  Y  |
-| 45  | NOP BL                       | `_verifyPermission` (NVRAM)          | Allow NVRAM writes                         |    —    |  —  |  Y  |
-| 46  | `b` (strict policy branch)   | `_IOSecureBSDRoot`                   | Skip secure root check (guard-site filter) |    —    |  —  |  Y  |
-| 47  | Syscall 439 + shellcode      | kcall10 (`SYS_kas_info` replacement) | Kernel arbitrary call from userspace       |    —    |  —  |  Y  |
-| 48  | Zero out                     | `_thid_should_crash`                 | Prevent GUARD_TYPE_MACH_PORT crash         |    —    |  —  |  Y  |
+| #     | Method                                | Function                                   | Purpose                                                                                  | Default Plan | Optional Method |
+| ----- | ------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- | :----------: | :-------------: |
+| JB-01 | `patch_amfi_cdhash_in_trustcache`     | `AMFIIsCDHashInTrustCache`                 | Always return true + store hash                                                          |      Y       |        —        |
+| JB-02 | `patch_amfi_execve_kill_path`         | AMFI execve kill return site               | Convert shared kill return from deny to allow                                            |      Y       |        —        |
+| JB-03 | `patch_cred_label_update_execve`      | `_cred_label_update_execve`                | Early-return low-riskized cs_flags path                                                  |      Y       |        —        |
+| JB-04 | `patch_hook_cred_label_update_execve` | `_hook_cred_label_update_execve`           | Low-riskized early-return hook gate                                                      |      Y       |        —        |
+| JB-05 | `patch_kcall10`                       | `sysent[439]` (`SYS_kas_info` replacement) | Kernel arbitrary call from userspace                                                     |      Y       |        —        |
+| JB-06 | `patch_post_validation_additional`    | `_postValidation` (additional)             | Disable SHA256-only hash-type reject                                                     |      Y       |        —        |
+| JB-07 | `patch_syscallmask_apply_to_proc`     | `_syscallmask_apply_to_proc`               | Low-riskized early return for syscall mask gate                                          |      Y       |        —        |
+| JB-08 | `patch_task_conversion_eval_internal` | `_task_conversion_eval_internal`           | Allow task conversion                                                                    |      Y       |        —        |
+| JB-09 | `patch_sandbox_hooks_extended`        | Sandbox MACF ops (extended)                | Stub remaining 30+ sandbox hooks (including IOKit ops 201..210)                          |      Y       |        —        |
+| JB-10 | `patch_iouc_failed_macf`              | IOUC MACF shared gate                      | Bypass shared IOUserClient MACF deny path (`AppleAPFSUserClient` / `AppleSEPUserClient`) |      Y       |        —        |
+| JB-11 | `patch_proc_security_policy`          | `_proc_security_policy`                    | Bypass security policy                                                                   |      Y       |        —        |
+| JB-12 | `patch_proc_pidinfo`                  | `_proc_pidinfo`                            | Allow pid 0 info                                                                         |      Y       |        —        |
+| JB-13 | `patch_convert_port_to_map`           | `_convert_port_to_map_with_flavor`         | Skip kernel map panic                                                                    |      Y       |        —        |
+| JB-14 | `patch_bsd_init_auth`                 | `_bsd_init` (2nd auth gate)                | Skip auth at @%s:%d                                                                      |      —       |        Y        |
+| JB-15 | `patch_dounmount`                     | `_dounmount`                               | Allow unmount (strict in-function match)                                                 |      —       |        Y        |
+| JB-16 | `patch_io_secure_bsd_root`            | `_IOSecureBSDRoot`                         | Skip secure root check (guard-site filter)                                               |      —       |        Y        |
+| JB-17 | `patch_load_dylinker`                 | `_load_dylinker`                           | Skip strict `LC_LOAD_DYLINKER == "/usr/lib/dyld"` gate                                   |      —       |        Y        |
+| JB-18 | `patch_mac_mount`                     | `___mac_mount`                             | Bypass MAC mount deny path (strict site)                                                 |      —       |        Y        |
+| JB-19 | `patch_nvram_verify_permission`       | `_verifyPermission` (NVRAM)                | Allow NVRAM writes                                                                       |      —       |        Y        |
+| JB-20 | `patch_shared_region_map`             | `_shared_region_map_and_slide_setup`       | Force shared region path                                                                 |      —       |        Y        |
+| JB-21 | `patch_spawn_validate_persona`        | `_spawn_validate_persona`                  | Skip persona validation                                                                  |      —       |        Y        |
+| JB-22 | `patch_task_for_pid`                  | `_task_for_pid`                            | Allow task_for_pid                                                                       |      —       |        Y        |
+| JB-23 | `patch_thid_should_crash`             | `_thid_should_crash`                       | Prevent GUARD_TYPE_MACH_PORT crash                                                       |      —       |        Y        |
+| JB-24 | `patch_vm_fault_enter_prepare`        | `_vm_fault_enter_prepare`                  | Skip fault check                                                                         |      —       |        Y        |
+| JB-25 | `patch_vm_map_protect`                | `_vm_map_protect`                          | Allow VM protect                                                                         |      —       |        Y        |
 
 ## CFW Installation Patches
 
@@ -138,6 +166,7 @@ Base-patch verification note (2026-03-05):
 | 6   | LC_LOAD_DYLIB injection | launchd              | Load `/cores/launchdhook.dylib` at launch |    —    |  —  |  Y  |
 
 Signing note (Dev install path):
+
 - `scripts/cfw_install_dev.sh` now uses `ldid_sign_ent <file> <entitlements.plist> [bundle_id]` for binaries requiring explicit entitlements (for example `vphoned`), which signs with `-K.../signcert.p12`.
 
 ### Installed components
@@ -155,37 +184,37 @@ Signing note (Dev install path):
 
 ### CFW Installer Flow Matrix (Script-Level)
 
-| Flow item | Regular (`cfw_install.sh`) | Dev (`cfw_install_dev.sh`) | JB (`cfw_install_jb.sh`) |
-| --- | --- | --- | --- |
-| Base CFW phases (1/7 → 7/7) | Runs directly | Runs directly | Runs via `CFW_SKIP_HALT=1 zsh cfw_install.sh` |
-| Dev overlay (`rpcserver_ios` replacement in `iosbinpack64.tar`) | — | Y (`apply_dev_overlay`) | — |
-| SSH readiness wait before install | Y (`wait_for_device_ssh_ready`) | — | Y (inherited from base run) |
-| `remote_mount` behavior | Ensures mountpoint and verifies mount success (hard fail) | Best-effort mount only (`mount_apfs ... || true`) | Ensures mountpoint and verifies mount success (hard fail) |
-| launchd jetsam patch (`patch-launchd-jetsam`) | — | Y (base-flow injection) | Y (JB-1) |
-| launchd dylib injection (`inject-dylib /cores/launchdhook.dylib`) | — | — | Y (JB-1) |
-| Procursus bootstrap deployment (`/mnt5/<bootHash>/jb-vphone/procursus`) | — | — | Y (JB-2) |
-| BaseBin hook deployment (`*.dylib` → `/mnt1/cores`) | — | — | Y (JB-3) |
-| Additional input resources | `cfw_input` | `cfw_input` + `resources/cfw_dev/rpcserver_ios` | `cfw_input` + `cfw_jb_input` |
-| Extra tool requirement beyond base | — | — | `zstd` |
-| Halt behavior | Halts unless `CFW_SKIP_HALT=1` | Halts unless `CFW_SKIP_HALT=1` | Always halts after JB phases |
+| Flow item                                                               | Regular (`cfw_install.sh`)                                | Dev (`cfw_install_dev.sh`)                      | JB (`cfw_install_jb.sh`)                      |
+| ----------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------- | ------ | --------------------------------------------------------- |
+| Base CFW phases (1/7 → 7/7)                                             | Runs directly                                             | Runs directly                                   | Runs via `CFW_SKIP_HALT=1 zsh cfw_install.sh` |
+| Dev overlay (`rpcserver_ios` replacement in `iosbinpack64.tar`)         | —                                                         | Y (`apply_dev_overlay`)                         | —                                             |
+| SSH readiness wait before install                                       | Y (`wait_for_device_ssh_ready`)                           | —                                               | Y (inherited from base run)                   |
+| `remote_mount` behavior                                                 | Ensures mountpoint and verifies mount success (hard fail) | Best-effort mount only (`mount_apfs ...         |                                               | true`) | Ensures mountpoint and verifies mount success (hard fail) |
+| launchd jetsam patch (`patch-launchd-jetsam`)                           | —                                                         | Y (base-flow injection)                         | Y (JB-1)                                      |
+| launchd dylib injection (`inject-dylib /cores/launchdhook.dylib`)       | —                                                         | —                                               | Y (JB-1)                                      |
+| Procursus bootstrap deployment (`/mnt5/<bootHash>/jb-vphone/procursus`) | —                                                         | —                                               | Y (JB-2)                                      |
+| BaseBin hook deployment (`*.dylib` → `/mnt1/cores`)                     | —                                                         | —                                               | Y (JB-3)                                      |
+| Additional input resources                                              | `cfw_input`                                               | `cfw_input` + `resources/cfw_dev/rpcserver_ios` | `cfw_input` + `cfw_jb_input`                  |
+| Extra tool requirement beyond base                                      | —                                                         | —                                               | `zstd`                                        |
+| Halt behavior                                                           | Halts unless `CFW_SKIP_HALT=1`                            | Halts unless `CFW_SKIP_HALT=1`                  | Always halts after JB phases                  |
 
 ## Summary
 
-| Component                | Regular |  Dev   |   JB    |
-| ------------------------ | :-----: | :----: | :-----: |
-| AVPBooter                |    1    |   1    |    1    |
-| iBSS                     |    2    |   2    |    3    |
-| iBEC                     |    3    |   3    |    3    |
-| LLB                      |    6    |   6    |    6    |
-| TXM                      |    1    |   12   |   12    |
-| Kernel                   |   28    |   28   |   62    |
-| **Boot chain total**     | **41**  | **52** | **87**  |
-|                          |         |        |         |
-| CFW binary patches       |    4    |   5    |    6    |
-| CFW installed components |    6    |   7    |    8    |
-| **CFW total**            | **10**  | **12** | **14**  |
-|                          |         |        |         |
-| **Grand total**          | **51**  | **64** | **101** |
+| Component                | Regular |  Dev   |                   JB                   |
+| ------------------------ | :-----: | :----: | :------------------------------------: |
+| AVPBooter                |    1    |   1    |                   1                    |
+| iBSS                     |    2    |   2    |                   3                    |
+| iBEC                     |    3    |   3    |                   3                    |
+| LLB                      |    6    |   6    |                   6                    |
+| TXM                      |    1    |   12   |                   12                   |
+| Kernel                   |   28    |   28   | 41 (default) / 53 (default + optional) |
+| **Boot chain total**     | **41**  | **52** |              **66 / 78**               |
+|                          |         |        |                                        |
+| CFW binary patches       |    4    |   5    |                   6                    |
+| CFW installed components |    6    |   7    |                   8                    |
+| **CFW total**            | **10**  | **12** |                 **14**                 |
+|                          |         |        |                                        |
+| **Grand total**          | **51**  | **64** |              **80 / 92**               |
 
 ### What each variant adds
 
@@ -194,12 +223,19 @@ Signing note (Dev install path):
 - TXM: +11 patches (selector24 force-pass, get-task-allow, selector42|29 shellcode, debugger entitlement, developer mode bypass)
 - CFW: +1 binary patch (launchd jetsam), +1 component (dev rpcserver_ios overlay)
 
-**Regular → JB** (+50 patches):
+**Regular → JB (default plan)** (+29 patches):
 
 - iBSS: +1 (nonce skip)
 - TXM: +11 (same as dev — selector24, get-task-allow, selector42|29 shellcode, debugger entitlement, dev mode bypass)
-- Kernel: +34 (trustcache, execve, sandbox, task/VM, memory, kcall10)
+- Kernel: +13 (JB default methods only)
 - CFW: +2 binary patches (launchd jetsam + dylib injection), +2 components (procursus + BaseBin hooks)
+
+**Regular → JB (default + optional)** (+41 patches):
+
+- iBSS: +1 (nonce skip)
+- TXM: +11 (same as dev)
+- Kernel: +25 (13 default methods + 12 optional methods)
+- CFW: +2 binary patches, +2 components
 
 ## JB Install Flow (`make cfw_install_jb`)
 
@@ -223,17 +259,17 @@ Why `ramdisk_build` still prints patch logs:
 - Step 7 may derive `kernelcache.research.vphone600.ramdisk` from pristine CloudOS and apply base `KernelPatcher` (28 patches), then signs `Ramdisk/krnl.ramdisk.img4`.
 - Step 7 also always signs restore kernel as `Ramdisk/krnl.img4`.
 
-| Variant       | Pre-step before `make ramdisk_build` | `Ramdisk/txm.img4`               | `Ramdisk/krnl.ramdisk.img4`                                                            | `Ramdisk/krnl.img4`                                      | Effective kernel used by `ramdisk_send.sh`            |
-| ------------- | ------------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
-| `RAMDISK`     | `make fw_patch`                      | release TXM + base TXM patch (1) | base kernel (28): use legacy `*.ramdisk` if present, else derive from pristine CloudOS | restore kernel from `fw_patch` (28)                      | `krnl.ramdisk.img4` (preferred), fallback `krnl.img4` |
-| `DEV+RAMDISK` | `make fw_patch_dev`                  | release TXM + base TXM patch (1) | base kernel (28): same derivation rule as above                                        | restore kernel from `fw_patch_dev` (28)                  | `krnl.ramdisk.img4` (preferred), fallback `krnl.img4` |
-| `JB+RAMDISK`  | `make fw_patch_jb`                   | release TXM + base TXM patch (1) | base kernel (28): same derivation rule as above                                        | restore kernel from `fw_patch_jb` (62 = 28 base + 34 JB) | `krnl.ramdisk.img4` (preferred), fallback `krnl.img4` |
+| Variant       | Pre-step before `make ramdisk_build` | `Ramdisk/txm.img4`               | `Ramdisk/krnl.ramdisk.img4`                                                            | `Ramdisk/krnl.img4`                                                       | Effective kernel used by `ramdisk_send.sh`            |
+| ------------- | ------------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `RAMDISK`     | `make fw_patch`                      | release TXM + base TXM patch (1) | base kernel (28): use legacy `*.ramdisk` if present, else derive from pristine CloudOS | restore kernel from `fw_patch` (28)                                       | `krnl.ramdisk.img4` (preferred), fallback `krnl.img4` |
+| `DEV+RAMDISK` | `make fw_patch_dev`                  | release TXM + base TXM patch (1) | base kernel (28): same derivation rule as above                                        | restore kernel from `fw_patch_dev` (28)                                   | `krnl.ramdisk.img4` (preferred), fallback `krnl.img4` |
+| `JB+RAMDISK`  | `make fw_patch_jb`                   | release TXM + base TXM patch (1) | base kernel (28): same derivation rule as above                                        | restore kernel from `fw_patch_jb` (41 default / 53 with optional methods) | `krnl.ramdisk.img4` (preferred), fallback `krnl.img4` |
 
 Notes:
 
 - `scripts/fw_patch_jb.py` no longer creates a ramdisk snapshot file directly.
 - Intent: keep ramdisk boot on a conservative base kernel while preserving full patched restore kernel for later JB flow.
-- Investigation details and runtime evidence: `research/jb_mount_failure_investigation_2026-03-04.md`
+- Investigation details and runtime evidence: `research/boot_jb_mount_failure_investigation.md`
 
 ## Dynamic Implementation Log (JB Patchers)
 
@@ -275,12 +311,25 @@ keystone/capstone-encoded instructions only.
 
 ### Kernelcache (`kernel_jb.py`)
 
-All 24 kernel JB patch methods are implemented in `scripts/patchers/kernel_jb.py`
-with capstone semantic matching and keystone-generated patch bytes only:
+Kernel JB methods remain implemented with capstone semantic matching and
+keystone-generated bytes, but runtime defaults are now intentionally restricted:
 
-- Runtime dispatch status: `KernelJBPatcher.find_all()` now enables the full A1-C24
-  set (including A2/C23/C24), so JB patch application matches the documented 34
-  JB-only kernel patches.
+- Boot-safe runtime dispatch:
+  - Enabled by default: 13 methods in `_DEFAULT_METHODS`
+  - Opt-in methods: 12 methods in `_OPTIONAL_METHODS` (`VPHONE_JB_ENABLE_OPTIONAL=1`)
+- Why default was reduced:
+  - Initial clean-kernel bisect showed watchdog regressions once broader risky methods were enabled.
+  - Current defaults keep a low-riskized subset enabled; broader methods remain opt-in via `_OPTIONAL_METHODS`.
+  - IDA verification showed key upstream-vs-dynamic deltas (B9/B10/B13) map to
+    different function contexts on current firmware, increasing false-positive risk.
+- E2E confirmation for current default:
+  - `vm/testing_exec_watch_20260305_050051.log`
+  - `vm/testing_exec_watch_20260305_050146.log`
+  - both runs reached restore-ready markers (USB mux + waiting-for-host gate).
+- Full boot-hang failure analysis and bisect evidence:
+  - `research/boot_hang_b19_mount_dounmount_strategy_compare.md`
+- Historical A/B mode controls for B11/B12/B13/B14/B19 were used during triage;
+  default runtime now favors fixed bootability over in-band mode toggles.
 
 **Group A: Core patches**
 
@@ -306,10 +355,16 @@ with capstone semantic matching and keystone-generated patch bytes only:
        `ADRP+LDR` preamble + post-sequence
        `mov x19,x0 ; mov x0,x1 ; bl ; cbz/cbnz w0`
      - both `b.eq` targets must be forward short branches.
-4. Extended sandbox MACF hook stubs (25 hooks, JB-only set)
+4. Extended sandbox MACF hook stubs (36 hooks, JB-only set)
    - Locator: dynamic `mac_policy_conf -> mpc_ops` discovery, then hook-index resolution.
    - Patch per hook function: `mov x0,#0 ; ret`.
-   - JB extended indices include vnode/proc hooks beyond base 5 hooks.
+   - JB extended indices include vnode/proc hooks and IOKit hooks (`ops[201..210]`) beyond base 5 hooks.
+5. IOUC MACF gate low-risk early return
+   - Locator: `"failed MACF"` string xref + function-shape guard + IOUC string co-reference.
+   - Patch: keep `PACIBSP`, then patch `fn+4`/`fn+8` to `mov x0,xzr ; retab`.
+   - Purpose: neutralize centralized IOUserClient MACF deny path seen in boot logs:
+     `IOUC AppleAPFSUserClient failed MACF ...` and
+     `IOUC AppleSEPUserClient failed MACF ...`.
 
 **Group B: Simple patches (string-anchored / pattern-matched)**
 
@@ -332,17 +387,21 @@ with capstone semantic matching and keystone-generated patch bytes only:
 11. `___mac_mount` MAC check bypass — FIXED: patch deny branch (`CBNZ w0`) instead of NOP'ing BL
 12. `_dounmount` MAC check NOP — FIXED: unsafe broad kern_text fallback removed (fail-closed)
 13. `_bsd_init` auth bypass (mov x0,#0) — FIXED: candidate selection hardened
-   - Strict selector (2026-03-05): keep candidates near rootvp anchor region and require
-     boot-path `/dev/null` function fingerprint before patching.
-   - Prevents high-offset plugin/kext false positives; unresolved cases fail-closed.
+
+- Strict selector (2026-03-05): keep candidates near rootvp anchor region and require
+  boot-path `/dev/null` function fingerprint before patching.
+- Prevents high-offset plugin/kext false positives; unresolved cases fail-closed.
+
 14. `_spawn_validate_persona` guard bypass — FIXED: removed global pattern scan
-   - Strict locator (2026-03-05): resolve spawn anchor function via
-     `com.apple.private.spawn-*` strings; no cross-kernel broad scan.
-   - Newer layout support: patch persona gate branch (`tbz/tbnz ... #1`) to unconditional
-     `b target` inside the anchored spawn function.
-   - Legacy `LDR + TBNZ` two-site NOP path retained when present.
+
+- Strict locator (2026-03-05): resolve spawn anchor function via
+  `com.apple.private.spawn-*` strings; no cross-kernel broad scan.
+- Newer layout support: patch persona gate branch (`tbz/tbnz ... #1`) to unconditional
+  `b target` inside the anchored spawn function.
+- Legacy `LDR + TBNZ` two-site NOP path retained when present.
+
 15. `_task_for_pid` proc_ro security copy NOP
-16. `_load_dylinker` PAC rebase bypass
+16. `_load_dylinker` strict dyld path check bypass
 17. `_shared_region_map_and_slide_setup` force (cmp x0,x0)
 18. `_verifyPermission` (NVRAM) NOP
 19. `_IOSecureBSDRoot` check skip — FIXED: requires `SecureRoot`+`SecureRootName` function match and guard-site filtering
@@ -353,7 +412,7 @@ with capstone semantic matching and keystone-generated patch bytes only:
 21. `_cred_label_update_execve` cs_flags shellcode
 22. `_syscallmask_apply_to_proc` filter mask shellcode
     - 2026-03-05 revalidation: locator now rejects low-confidence matches and panic-target helper resolution (fail-closed on signature mismatch).
-    - 2026-03-05 branch `patch-fix-C22`: temporarily commented out in `kernel_jb.py` for safe testing until new target path is re-derived.
+    - Current status: low-riskized and re-enabled in the default method plan.
 23. `_hook_cred_label_update_execve` inline trampoline + vnode_getattr shellcode
     - Code cave restricted to **TEXT_EXEC only (**PRELINK_TEXT excluded due to KTRR)
     - Inline trampoline (B cave at function entry) replaces ops table pointer rewrite
@@ -378,7 +437,56 @@ Validated using pristine inputs from `updates-cdn/`:
 > Note: These emit counts were captured at validation time and may differ from
 > the current source if methods were subsequently refactored. The TXM JB patcher
 > currently has 5 methods emitting 11 patches in txm_dev.py (selector24 force-pass = 2 emits);
-> the kernel JB patcher has 24 methods. Actual emit counts depend on how many
-> dynamic targets resolve per binary.
+> the kernel JB patcher has 25 documented patch methods in source, and current
+> default runtime enables 13 methods (`_DEFAULT_METHODS`). Actual emit counts depend on
+> both enabled method set and per-binary dynamic target resolution.
 
 All patches are applied dynamically via string anchors, instruction patterns, and cross-reference analysis — no hardcoded offsets — ensuring portability across iOS versions.
+
+## 2026-03-05 Documentation Refresh (Symbol-Aware)
+
+A documentation-only re-analysis pass was completed for JB patch docs using:
+
+- IDA MCP control-flow/disassembly evidence
+- recovered symbols from `research/kernel_info/json/kernelcache.research.vphone600.bin.symbols.json`
+
+### Scope
+
+- Fully rewritten batch (13 docs):
+  - B7, B8, B10, B12, B13, B15, B18, B19
+  - A3, A4
+  - C22, C23, C24
+
+### Findings Pattern
+
+- `match`: function symbol and patch-site semantics agree (e.g. `bsd_init`, `convert_port_to_map_with_flavor`, `vm_map_protect`, NVRAM verifyPermission).
+- `partial`: symbol present for major path, but helper/internal patch sites remain analyst-labeled (e.g. sandbox ops wrappers, AMFI internals).
+- `mismatch`: documented function naming and recovered symbol entrypoint differ and require follow-up reconciliation (notably some legacy notes for policy/helper-layer naming where direct symbol recovery is still partial).
+
+### Constraint Applied
+
+- This pass intentionally did **not** validate runtime patch emission behavior.
+- Conclusions were derived from static binary analysis and symbol-consistency auditing only.
+
+## JB Runtime + IDA Verification Pass (2026-03-05)
+
+- Timestamp (UTC): `2026-03-05T14:55:58.795709+00:00`
+- Kernel input: `/Users/qaq/Documents/Firmwares/PCC-CloudOS-26.3-23D128/kernelcache.research.vphone600`
+- Runtime status counts: `{'hit': 24}`
+- IDA mapping status: `ok` (IDA runtime mapping loaded.)
+- Call-chain mapping status: `ok` (IDA call-chain report loaded.)
+- Doc patch methods not in `find_all()`: `12`
+- Unscheduled methods: `patch_bsd_init_auth`, `patch_dounmount`, `patch_io_secure_bsd_root`, `patch_load_dylinker`, `patch_mac_mount`, `patch_nvram_verify_permission`, `patch_shared_region_map`, `patch_spawn_validate_persona`, `patch_task_for_pid`, `patch_thid_should_crash`, `patch_vm_fault_enter_prepare`, `patch_vm_map_protect`
+- Non-hit methods on this kernel: `none`
+- Low-risk optimized methods (hit): `patch_cred_label_update_execve`, `patch_hook_cred_label_update_execve`, `patch_kcall10`, `patch_post_validation_additional`, `patch_syscallmask_apply_to_proc`
+- Recommended immediate action: no no-hit methods detected in this pass.
+- Recommended immediate action: current method set is treated as low-risk under this policy snapshot.
+- Scheduler hardening in `scripts/patchers/kernel_jb.py`: low-risk default plan with env-gated optional/high-risk expansion knobs.
+- Operator entrypoints: `make jb_verify_runtime KERNEL_PATH=... WORKERS=8`, `make jb_update_runtime_docs`.
+- Artifacts: `research/kernel_patch_jb/runtime_verification/runtime_verification_report.json`
+- Artifacts: `research/kernel_patch_jb/runtime_verification/ida_runtime_patch_points.json`
+- Artifacts: `research/kernel_patch_jb/runtime_verification/ida_patch_chain_report.json`
+- Artifacts: `research/kernel_patch_jb/runtime_verification/ida_patch_chain_report.md`
+- Full `fw_patch_jb.py` artifact re-check: `verified_ok=101` / `total_expected=101`, `mismatch_count=0`.
+- Full firmware bytecheck artifact: `research/kernel_patch_jb/runtime_verification/full_fw_patch_kernel_bytecheck.json`.
+<!-- END_JB_RUNTIME_IDA_VERIFICATION_2026_03_05 -->

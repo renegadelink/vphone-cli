@@ -1,5 +1,6 @@
 """kernel_jb.py — Jailbreak extension patcher for iOS kernelcache."""
 
+import os
 import time
 
 from .kernel_jb_base import KernelJBPatcherBase
@@ -27,10 +28,12 @@ from .kernel_jb_patch_cred_label import KernelJBPatchCredLabelMixin
 from .kernel_jb_patch_syscallmask import KernelJBPatchSyscallmaskMixin
 from .kernel_jb_patch_hook_cred_label import KernelJBPatchHookCredLabelMixin
 from .kernel_jb_patch_kcall10 import KernelJBPatchKcall10Mixin
+from .kernel_jb_patch_iouc_macf import KernelJBPatchIoucmacfMixin
 
 
 class KernelJBPatcher(
     KernelJBPatchKcall10Mixin,
+    KernelJBPatchIoucmacfMixin,
     KernelJBPatchHookCredLabelMixin,
     KernelJBPatchSyscallmaskMixin,
     KernelJBPatchCredLabelMixin,
@@ -58,34 +61,48 @@ class KernelJBPatcher(
 ):
     _TIMING_LOG_MIN_SECONDS = 10.0
 
-    _GROUP_AB_METHODS = (
+    # Default low-risk schedule.
+    _DEFAULT_METHODS = (
         "patch_amfi_cdhash_in_trustcache",      # A1
         "patch_amfi_execve_kill_path",          # A2
+        "patch_cred_label_update_execve",       # C21 (low-riskized)
+        "patch_hook_cred_label_update_execve",  # C23 (low-riskized)
+        "patch_kcall10",                        # C24 (low-riskized)
+        "patch_post_validation_additional",     # B5
+        "patch_syscallmask_apply_to_proc",      # C22
         "patch_task_conversion_eval_internal",  # A3
         "patch_sandbox_hooks_extended",         # A4
-        "patch_post_validation_additional",     # B5
+        "patch_iouc_failed_macf",              # A5
         "patch_proc_security_policy",           # B6
         "patch_proc_pidinfo",                   # B7
         "patch_convert_port_to_map",            # B8
-        "patch_vm_fault_enter_prepare",         # B9
-        "patch_vm_map_protect",                 # B10
-        "patch_mac_mount",                      # B11
-        "patch_dounmount",                      # B12
-        "patch_bsd_init_auth",                  # B13
-        "patch_spawn_validate_persona",         # B14
-        "patch_task_for_pid",                   # B15
-        "patch_load_dylinker",                  # B16
-        "patch_shared_region_map",              # B17
-        "patch_nvram_verify_permission",        # B18
-        "patch_io_secure_bsd_root",             # B19
-        "patch_thid_should_crash",              # B20
     )
-    _GROUP_C_METHODS = (
-        "patch_cred_label_update_execve",       # C21
-        # "patch_syscallmask_apply_to_proc",    # C22 (temporarily skipped on current fw)
-        "patch_hook_cred_label_update_execve",  # C23
-        "patch_kcall10",                        # C24
+
+    # Validated hit methods that are currently not part of default schedule.
+    _OPTIONAL_METHODS = (
+        "patch_bsd_init_auth",
+        "patch_dounmount",
+        "patch_io_secure_bsd_root",
+        "patch_load_dylinker",
+        "patch_mac_mount",
+        "patch_nvram_verify_permission",
+        "patch_shared_region_map",
+        "patch_spawn_validate_persona",
+        "patch_task_for_pid",
+        "patch_thid_should_crash",
+        "patch_vm_fault_enter_prepare",
+        "patch_vm_map_protect",
     )
+
+    # Reserved for future use if a method is re-classified as high-impact.
+    _HIGH_RISK_METHODS = ()
+
+    # Reserved for future use if a method becomes no-hit on target kernels.
+    _NOHIT_METHODS = ()
+
+    # Compatibility fields used by local tooling/reporting.
+    _GROUP_AB_METHODS = _DEFAULT_METHODS
+    _GROUP_C_METHODS = ()
 
     def __init__(self, data, verbose=False):
         super().__init__(data, verbose)
@@ -104,6 +121,49 @@ class KernelJBPatcher(
     def _run_methods(self, methods):
         for method_name in methods:
             self._run_patch_method_timed(method_name)
+
+    @staticmethod
+    def _env_enabled(name):
+        v = os.environ.get(name, "").strip().lower()
+        return v in ("1", "true", "yes", "on")
+
+    @staticmethod
+    def _parse_method_list(raw):
+        if not raw:
+            return []
+        return [item.strip() for item in raw.split(",") if item.strip()]
+
+    def _build_method_plan(self):
+        methods = list(self._DEFAULT_METHODS)
+
+        if self._env_enabled("VPHONE_JB_ENABLE_OPTIONAL"):
+            methods.extend(self._OPTIONAL_METHODS)
+        if self._env_enabled("VPHONE_JB_ENABLE_HIGH_RISK"):
+            methods.extend(self._HIGH_RISK_METHODS)
+
+        methods.extend(
+            self._parse_method_list(os.environ.get("VPHONE_JB_EXTRA_METHODS", ""))
+        )
+
+        disabled = set(
+            self._parse_method_list(os.environ.get("VPHONE_JB_DISABLE_METHODS", ""))
+        )
+        allow_nohit = self._env_enabled("VPHONE_JB_ALLOW_NOHIT")
+
+        final = []
+        seen = set()
+        for method_name in methods:
+            if method_name in seen:
+                continue
+            if method_name in disabled:
+                continue
+            if not allow_nohit and method_name in self._NOHIT_METHODS:
+                continue
+            if not callable(getattr(self, method_name, None)):
+                continue
+            seen.add(method_name)
+            final.append(method_name)
+        return tuple(final)
 
     def _print_timing_summary(self):
         if not self.patch_timings:
@@ -127,8 +187,12 @@ class KernelJBPatcher(
         self._reset_patch_state()
         self.patch_timings = []
 
-        self._run_methods(self._GROUP_AB_METHODS)
-        self._run_methods(self._GROUP_C_METHODS)
+        plan = self._build_method_plan()
+        self._log(
+            "[*] JB method plan: "
+            + (", ".join(plan) if plan else "(empty)")
+        )
+        self._run_methods(plan)
         self._print_timing_summary()
 
         return self.patches

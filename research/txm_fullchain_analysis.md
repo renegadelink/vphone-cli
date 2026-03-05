@@ -10,22 +10,22 @@ this analysis: `0xfffffff017020000` (VA = raw_offset + `0xfffffff017004000`).
 
 TXM uses a multi-byte return code convention:
 
-| Byte     | Purpose                                                |
-|----------|--------------------------------------------------------|
-| Byte 0   | Check identity (e.g., `0xA1` = check_hash_flags)      |
-| Byte 1   | Error indicator: `0x00` = pass, non-zero = fail        |
-| Byte 2+  | Additional error info                                  |
+| Byte    | Purpose                                          |
+| ------- | ------------------------------------------------ |
+| Byte 0  | Check identity (e.g., `0xA1` = check_hash_flags) |
+| Byte 1  | Error indicator: `0x00` = pass, non-zero = fail  |
+| Byte 2+ | Additional error info                            |
 
 The caller checks `(result & 0xFF00) == 0` — if byte 1 is zero, the check passed.
 
 **Important**: The previous `txm_selector24_analysis.md` had SUCCESS/ERROR labels
 **swapped**. Corrected mappings:
 
-| Return Value | Byte 1 | Meaning in Caller | Description                  |
-|-------------|--------|-------------------|------------------------------|
-| `0xA1`      | `0x00` | **PASS**          | Hash check passed            |
-| `0x130A1`   | `0x30` | **FAIL**          | Hash consistency mismatch    |
-| `0x22DA1`   | `0x2D` | **FAIL**          | Hash flags type violation    |
+| Return Value | Byte 1 | Meaning in Caller | Description               |
+| ------------ | ------ | ----------------- | ------------------------- |
+| `0xA1`       | `0x00` | **PASS**          | Hash check passed         |
+| `0x130A1`    | `0x30` | **FAIL**          | Hash consistency mismatch |
+| `0x22DA1`    | `0x2D` | **FAIL**          | Hash flags type violation |
 
 The panic log `selector: 24 | 0xA1 | 0x30 | 1` decodes to return code `0x130A1`.
 
@@ -75,15 +75,15 @@ cs_evaluate (0xfffffff017024834)
 
 ### IDA Addresses → Raw File Offsets
 
-| IDA VA               | Raw Offset | Content                           |
-|----------------------|-----------|-----------------------------------|
-| `0xfffffff017035398` | `0x31398` | Function start (PACIBSP)          |
-| `0xfffffff0170353B0` | `0x313B0` | `mov x19, x1` (after prologue)    |
-| `0xfffffff0170353CC` | `0x313CC` | PATCH 1: `ldr x1, [x20, #0x38]`  |
-| `0xfffffff0170353D4` | `0x313D4` | PATCH 2: `bl hash_flags_extract`  |
-| `0xfffffff017035418` | `0x31418` | `mov w0, #0x30A1; movk ...#1`    |
-| `0xfffffff017035420` | `0x31420` | Exit path (LDP epilogue)          |
-| `0xfffffff017035454` | `0x31454` | `mov w0, #0x2DA1; movk ...#2`    |
+| IDA VA               | Raw Offset | Content                          |
+| -------------------- | ---------- | -------------------------------- |
+| `0xfffffff017035398` | `0x31398`  | Function start (PACIBSP)         |
+| `0xfffffff0170353B0` | `0x313B0`  | `mov x19, x1` (after prologue)   |
+| `0xfffffff0170353CC` | `0x313CC`  | PATCH 1: `ldr x1, [x20, #0x38]`  |
+| `0xfffffff0170353D4` | `0x313D4`  | PATCH 2: `bl hash_flags_extract` |
+| `0xfffffff017035418` | `0x31418`  | `mov w0, #0x30A1; movk ...#1`    |
+| `0xfffffff017035420` | `0x31420`  | Exit path (LDP epilogue)         |
+| `0xfffffff017035454` | `0x31454`  | `mov w0, #0x2DA1; movk ...#2`    |
 
 ### Decompiled Pseudocode
 
@@ -359,29 +359,37 @@ uint64_t cs_evaluate(cs_session *session) {
 ## Validation Sub-check Details
 
 ### [1] check_library_validation (ret 0xA9)
+
 Checks library validation flag. If `*(*a1 + 5) & 1` and selector not in [7..10], returns `0x130A9` (fail).
 
 ### [2] check_runtime_flag (ret 0xA8)
+
 For selector <= 5: checks runtime hardened flag via function pointer at `a1[1]()`.
 Returns `0x130A8` if runtime enabled and runtime flag set.
 
 ### [3] check_jit_entitlement (ret 0xA0)
+
 Checks `com.apple.developer.cs.allow-jit` and `com.apple.developer.web-browser-engine.webcontent`
 entitlements. For selector <= 5, also checks against a list of 4 platform entitlements.
 
 ### [4] check_hash_flags (ret 0xA1) — PATCH TARGET
+
 See detailed analysis above.
 
 ### [5] check_team_id (ret 0xA2)
+
 Checks team ID against 6 known Apple team IDs using entitlement lookup functions.
 
 ### [6] check_srd_entitlement (ret 0xAA)
+
 Checks `com.apple.private.security-research-device` entitlement.
 
 ### [7] check_extended_research (ret 0xAB)
+
 Checks `com.apple.private.security-research-device.extended-research-mode` entitlement.
 
 ### [8] check_hash_type (ret 0xAC)
+
 Re-extracts hash data and validates hash algorithm type via `sub_FFFFFFF01702EDF4`.
 
 ---
@@ -389,16 +397,18 @@ Re-extracts hash data and validates hash algorithm type via `sub_FFFFFFF01702EDF
 ## Why the NOP Patches Failed
 
 ### Test results:
+
 | Patch 1 (NOP LDR) | Patch 2 (NOP BL) | Result    |
-|--------------------|-------------------|-----------|
-| OFF                | OFF               | **Boots** |
-| ON                 | OFF               | Panic     |
-| OFF                | ON                | Panic     |
-| ON                 | ON                | Panic     |
+| ----------------- | ---------------- | --------- |
+| OFF               | OFF              | **Boots** |
+| ON                | OFF              | Panic     |
+| OFF               | ON               | Panic     |
+| ON                | ON               | Panic     |
 
 ### Root cause analysis:
 
 **With no patches (dev-only)**: The function runs normally. For our binaries:
+
 - `hash_flags_extract` returns proper flags from CS blob
 - `hash_data_extract` returns the hash data pointer
 - The consistency check `has_data == exempt` evaluates to `1 == 0` (has data, not exempt) → **mismatch** → passes (B.NE taken)
@@ -407,6 +417,7 @@ Re-extracts hash data and validates hash algorithm type via `sub_FFFFFFF01702EDF
 **NOP LDR only (Patch 1)**: `x1` retains the value of `a2` (selector type, a small number like 5 or 10) instead of `cs_size` (the actual blob size). When `hash_flags_extract` runs, the bounds check `blob + 44 <= blob + size` uses the wrong size. If `a2 < 44`, the check fails → error path → `flags` stays 0. Then `exempt = 0`, and if `has_data = 1` → mismatch passes, but later type-specific logic with `(flags & 2) == 0` may return `0x22DA1` (FAIL) depending on selector type.
 
 **NOP BL only (Patch 2)**: `hash_flags_extract` never runs → `flags = 0` (initialized to 0). So `exempt = 0`. If hash data exists (`has_data = 1`), consistency check passes (mismatch: `1 != 0`). But then:
+
 - For type 1-2: `(flags & 2) == 0` → returns `0x22DA1` **FAIL**
 - For type 3-5: `(flags & 2) == 0` → returns `0xA1` **PASS**
 - For type > 5: returns `0xA1` **PASS**

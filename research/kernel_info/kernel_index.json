@@ -1,0 +1,20 @@
+[
+  {
+    "kernel_name": "kernelcache.release.vphone600",
+    "json_path": "/Users/qaq/Documents/GitHub/vphone-cli/research/kernel_info/json/kernelcache.release.vphone600.bin.symbols.json",
+    "matched": 4327,
+    "missed": 1398,
+    "percent": 75.58079999999999644,
+    "total": 5725,
+    "json_sha256": "9dba4eb578da1403dcb17b57ed82f3df469a4315c089d85cd8a583df228686c2"
+  },
+  {
+    "kernel_name": "kernelcache.research.vphone600",
+    "json_path": "/Users/qaq/Documents/GitHub/vphone-cli/research/kernel_info/json/kernelcache.research.vphone600.bin.symbols.json",
+    "matched": 4327,
+    "missed": 1398,
+    "percent": 75.58079999999999644,
+    "total": 5725,
+    "json_sha256": "7232730d5d88dc816b1e7b46505ac61b28bb9647a41cc0806538c7e800d23942"
+  }
+]

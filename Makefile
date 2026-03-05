@@ -8,7 +8,6 @@ CPU         ?= 8
 MEMORY      ?= 8192
 DISK_SIZE   ?= 64
 CFW_INPUT   ?= cfw_input
-BASE_PATCH  ?=
 
 # ─── Build info ──────────────────────────────────────────────────
 GIT_HASH    := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -72,19 +71,13 @@ help:
 	@echo "Ramdisk:"
 	@echo "  make ramdisk_build           Build signed SSH ramdisk"
 	@echo "  make ramdisk_send            Send ramdisk to device"
-	@echo "  make testing_ramdisk_build   Build testing boot chain (no SSH, no CFW)"
-	@echo "  make testing_ramdisk_send    Send testing boot chain to device"
-	@echo "  make testing_checkpoint_save Save kernel checkpoint for patch testing"
-	@echo "    Options: BASE_PATCH=normal|dev|jb"
-	@echo "  make testing_exec            Quick test flow (prepare -> patch_<base> -> build/send -> boot_dfu)"
-	@echo "    Options: BASE_PATCH=normal|dev|jb"
 	@echo ""
 	@echo "CFW:"
 	@echo "  make cfw_install             Install CFW mods via SSH"
 	@echo "  make cfw_install_dev         Install CFW mods via SSH (dev mode)"
 	@echo "  make cfw_install_jb          Install CFW + JB extensions (jetsam/procursus/basebin)"
 	@echo ""
-	@echo "Variables: VM_DIR=$(VM_DIR) CPU=$(CPU) MEMORY=$(MEMORY) DISK_SIZE=$(DISK_SIZE) BASE_PATCH=$(if $(BASE_PATCH),$(BASE_PATCH),jb)"
+	@echo "Variables: VM_DIR=$(VM_DIR) CPU=$(CPU) MEMORY=$(MEMORY) DISK_SIZE=$(DISK_SIZE)"
 
 # ═══════════════════════════════════════════════════════════════════
 # Setup
@@ -224,37 +217,13 @@ restore:
 # Ramdisk
 # ═══════════════════════════════════════════════════════════════════
 
-.PHONY: ramdisk_build ramdisk_send testing_ramdisk_build testing_ramdisk_send testing_checkpoint_save testing_exec testing_kernel_patch testing_c23_bisect
+.PHONY: ramdisk_build ramdisk_send
 
 ramdisk_build:
 	cd $(VM_DIR) && $(PYTHON) "$(CURDIR)/$(SCRIPTS)/ramdisk_build.py" .
 
 ramdisk_send:
 	cd $(VM_DIR) && IRECOVERY="$(CURDIR)/$(IRECOVERY)" zsh "$(CURDIR)/$(SCRIPTS)/ramdisk_send.sh"
-
-testing_ramdisk_build:
-	cd $(VM_DIR) && $(PYTHON) "$(CURDIR)/$(SCRIPTS)/testing_ramdisk_build.py" .
-
-testing_ramdisk_send:
-	cd $(VM_DIR) && IRECOVERY="$(CURDIR)/$(IRECOVERY)" zsh "$(CURDIR)/$(SCRIPTS)/testing_ramdisk_send.sh"
-
-testing_checkpoint_save:
-	VM_DIR="$(VM_DIR)" BASE_PATCH="$(if $(BASE_PATCH),$(BASE_PATCH),jb)" zsh "$(CURDIR)/$(SCRIPTS)/testing_checkpoint_save.sh"
-
-testing_exec:
-	VM_DIR="$(VM_DIR)" BASE_PATCH="$(if $(BASE_PATCH),$(BASE_PATCH),jb)" zsh "$(CURDIR)/$(SCRIPTS)/testing_exec.sh"
-
-testing_kernel_patch:
-	@if [ -z "$(strip $(or $(PATCHES),$(PATCH)))" ]; then \
-		echo "Error: PATCH or PATCHES is required"; \
-		echo "  Example: make testing_kernel_patch PATCH=patch_kcall10"; \
-		echo "  Example: make testing_kernel_patch PATCHES='patch_a patch_b'"; \
-		exit 1; \
-	fi
-	cd $(VM_DIR) && BASE_PATCH="$(if $(BASE_PATCH),$(BASE_PATCH),jb)" $(PYTHON) "$(CURDIR)/$(SCRIPTS)/testing_kernel_patch.py" . --base-patch "$(if $(BASE_PATCH),$(BASE_PATCH),jb)" $(or $(PATCHES),$(PATCH))
-
-testing_c23_bisect:
-	cd $(VM_DIR) && $(PYTHON) "$(CURDIR)/$(SCRIPTS)/testing_c23_bisect.py" . $(VARIANT)
 
 # ═══════════════════════════════════════════════════════════════════
 # CFW

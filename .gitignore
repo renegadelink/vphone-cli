@@ -322,3 +322,7 @@ scripts/vphoned/vphoned
 sources/vphone-cli/VPhoneBuildInfo.swift
 setup_logs/
 /testing_results
+/.ida-mcp
+/research/reference/xnu
+/research/artifacts
+/research/xnu

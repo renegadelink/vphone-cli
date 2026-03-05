@@ -3,6 +3,7 @@
 ## Problem
 
 Original JB TXM patches (2 NOPs in selector24 handler) cause kernel panic:
+
 ```
 TXM [Error]: CodeSignature: selector: 24 | 0xA1 | 0x30 | 1
 panic: unexpected SIGKILL of init with reason -- namespace 9 code 0x1
@@ -213,17 +214,20 @@ Reads a 32-bit big-endian flags field from cs_blob offset 0xC, byte-swaps, store
 ## Why the Original NOP Patches Were Wrong
 
 ### PATCH 1 only (NOP ldr x1, [x20, #0x38]):
+
 - x1 retains incoming arg value (hash_type) instead of cs_blob_size
 - hash_flags_extract called with WRONG size → garbage flags or OOB
 - Consistency check fails → 0xA1
 
 ### PATCH 2 only (NOP bl hash_flags_extract):
+
 - flags stays 0 (initialized at 0x0313C4)
 - hash_result from second BL is non-zero (valid hash exists)
 - flags_bit1 = 0, has_result = 1 → mismatch
 - For type > 5 → return 0xA1
 
 ### Both patches disabled:
+
 - Function runs normally, hash_flags_extract extracts correct flags
 - flags_bit1 matches has_result → returns 0x130A1 (success)
 - Boot succeeds (same as dev variant)
@@ -231,6 +235,7 @@ Reads a 32-bit big-endian flags field from cs_blob offset 0xC, byte-swaps, store
 ## Return Code Semantics (CORRECTED)
 
 The caller checks return values via `tst w0, #0xff00; b.ne <error>`:
+
 - **0xA1** (byte 1 = 0x00) → **PASS** — `0xA1 & 0xFF00 = 0` → continues
 - **0x130A1** (byte 1 = 0x30) → **FAIL** — `0x130A1 & 0xFF00 = 0x3000` → branches to error
 - **0x22DA1** (byte 1 = 0x2D) → **FAIL** — `0x22DA1 & 0xFF00 = 0x2D00` → branches to error
@@ -278,6 +283,7 @@ Insert `mov w0, #0xa1; b <epilogue>` after the prologue, returning PASS immediat
 ### Patcher implementation (`txm_jb.py`)
 
 Method `patch_selector24_force_pass()`:
+
 - Locator: finds `mov w0, #0xa1`, walks back to PACIBSP, verifies selector24
   characteristic pattern (LDR X1,[Xn,#0x38] / ADD X2 / BL / LDP).
 - Finds prologue end dynamically (`add x29, sp, #imm` → next instruction).

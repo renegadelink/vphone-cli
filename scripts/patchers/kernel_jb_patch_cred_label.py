@@ -113,13 +113,14 @@ class KernelJBPatchCredLabelMixin:
         return fallback
 
     def patch_cred_label_update_execve(self):
-        """Redirect _cred_label_update_execve to shellcode that sets cs_flags.
+        """Low-risk in-function early return for _cred_label_update_execve.
 
-        Shellcode: LDR x0,[sp,#8]; LDR w1,[x0]; ORR w1,w1,#0x4000000;
-                   ORR w1,w1,#0xF; AND w1,w1,#0xFFFFC0FF; STR w1,[x0];
-                   MOV x0,xzr; RETAB
+        Keep PAC prologue intact and patch the next two instructions:
+          mov x0, xzr
+          retab
+        This avoids code cave use and large shellcode trampolines.
         """
-        self._log("\n[JB] _cred_label_update_execve: shellcode (cs_flags)")
+        self._log("\n[JB] _cred_label_update_execve: low-risk early return")
 
         func_off = -1
 
@@ -138,49 +139,20 @@ class KernelJBPatchCredLabelMixin:
             self._log("  [-] function not found, skipping shellcode patch")
             return False
 
-        # Find code cave
-        cave = self._find_code_cave(32)  # 8 instructions = 32 bytes
-        if cave < 0:
-            self._log("  [-] no code cave found for shellcode")
+        func_end = self._find_func_end(func_off, 0x1000)
+        if func_end <= func_off + 8:
+            self._log("  [-] function too small for low-risk patch")
             return False
 
-        # Assemble shellcode
-        shellcode = (
-            asm("ldr x0, [sp, #8]")  # load cred pointer
-            + asm("ldr w1, [x0]")  # load cs_flags
-            + asm("orr w1, w1, #0x4000000")  # set CS_PLATFORM_BINARY
-            + asm(
-                "orr w1, w1, #0xF"
-            )  # set CS_VALID|CS_ADHOC|CS_GET_TASK_ALLOW|CS_INSTALLER
-            + bytes(
-                [0x21, 0x64, 0x12, 0x12]
-            )  # AND w1, w1, #0xFFFFC0FF (clear CS_HARD|CS_KILL etc)
-            + asm("str w1, [x0]")  # store back
-            + asm("mov x0, xzr")  # return 0
-            + bytes([0xFF, 0x0F, 0x5F, 0xD6])  # RETAB
+        self.emit(
+            func_off + 4,
+            asm("mov x0, xzr"),
+            "mov x0,xzr [_cred_label_update_execve low-risk]",
         )
-
-        ret_off = self._find_cred_label_return_site(func_off)
-        if ret_off < 0:
-            self._log("  [-] function return not found")
-            return False
-
-        # Write shellcode to cave
-        for i in range(0, len(shellcode), 4):
-            self.emit(
-                cave + i,
-                shellcode[i : i + 4],
-                f"shellcode+{i} [_cred_label_update_execve]",
-            )
-
-        # Branch from function return to cave
-        b_bytes = self._encode_b(ret_off, cave)
-        if b_bytes:
-            self.emit(
-                ret_off, b_bytes, f"b cave [_cred_label_update_execve -> 0x{cave:X}]"
-            )
-        else:
-            self._log("  [-] branch to cave out of range")
-            return False
+        self.emit(
+            func_off + 8,
+            bytes([0xFF, 0x0F, 0x5F, 0xD6]),  # retab
+            "retab [_cred_label_update_execve low-risk]",
+        )
 
         return True

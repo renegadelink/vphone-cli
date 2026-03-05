@@ -1,0 +1,597 @@
+[
+  {
+    "method": "patch_amfi_cdhash_in_trustcache",
+    "desc": "mov x0,#1 [AMFIIsCDHashInTrustCache]",
+    "va": 18446741874827090704,
+    "va_hex": "0xFFFFFE0008645B10",
+    "foff_hex": "0x01641B10"
+  },
+  {
+    "method": "patch_amfi_cdhash_in_trustcache",
+    "desc": "cbz x2,+8 [AMFIIsCDHashInTrustCache]",
+    "va": 18446741874827090708,
+    "va_hex": "0xFFFFFE0008645B14",
+    "foff_hex": "0x01641B14"
+  },
+  {
+    "method": "patch_amfi_cdhash_in_trustcache",
+    "desc": "str x0,[x2] [AMFIIsCDHashInTrustCache]",
+    "va": 18446741874827090712,
+    "va_hex": "0xFFFFFE0008645B18",
+    "foff_hex": "0x01641B18"
+  },
+  {
+    "method": "patch_amfi_cdhash_in_trustcache",
+    "desc": "ret [AMFIIsCDHashInTrustCache]",
+    "va": 18446741874827090716,
+    "va_hex": "0xFFFFFE0008645B1C",
+    "foff_hex": "0x01641B1C"
+  },
+  {
+    "method": "patch_amfi_execve_kill_path",
+    "desc": "mov w0,#0 [AMFI kill return \u2192 allow]",
+    "va": 18446741874827125644,
+    "va_hex": "0xFFFFFE000864E38C",
+    "foff_hex": "0x0164A38C"
+  },
+  {
+    "method": "patch_bsd_init_auth",
+    "desc": "mov x0,#0 [_bsd_init auth]",
+    "va": 18446741874820188636,
+    "va_hex": "0xFFFFFE0007FB09DC",
+    "foff_hex": "0x00FAC9DC"
+  },
+  {
+    "method": "patch_convert_port_to_map",
+    "desc": "b 0xB0E154 [_convert_port_to_map skip panic]",
+    "va": 18446741874815344896,
+    "va_hex": "0xFFFFFE0007B12100",
+    "foff_hex": "0x00B0E100"
+  },
+  {
+    "method": "patch_cred_label_update_execve",
+    "desc": "mov x0,xzr [_cred_label_update_execve low-risk]",
+    "va": 18446741874827124480,
+    "va_hex": "0xFFFFFE000864DF00",
+    "foff_hex": "0x01649F00"
+  },
+  {
+    "method": "patch_cred_label_update_execve",
+    "desc": "retab [_cred_label_update_execve low-risk]",
+    "va": 18446741874827124484,
+    "va_hex": "0xFFFFFE000864DF04",
+    "foff_hex": "0x01649F04"
+  },
+  {
+    "method": "patch_dounmount",
+    "desc": "NOP [_dounmount MAC check]",
+    "va": 18446741874817070512,
+    "va_hex": "0xFFFFFE0007CB75B0",
+    "foff_hex": "0x00CB35B0"
+  },
+  {
+    "method": "patch_hook_cred_label_update_execve",
+    "desc": "mov x0,xzr [_hook_cred_label_update_execve low-risk]",
+    "va": 18446741874841300200,
+    "va_hex": "0xFFFFFE00093D2CE8",
+    "foff_hex": "0x023CECE8"
+  },
+  {
+    "method": "patch_hook_cred_label_update_execve",
+    "desc": "retab [_hook_cred_label_update_execve low-risk]",
+    "va": 18446741874841300204,
+    "va_hex": "0xFFFFFE00093D2CEC",
+    "foff_hex": "0x023CECEC"
+  },
+  {
+    "method": "patch_io_secure_bsd_root",
+    "desc": "b #0x1A4 [_IOSecureBSDRoot]",
+    "va": 18446741874824110576,
+    "va_hex": "0xFFFFFE000836E1F0",
+    "foff_hex": "0x0136A1F0"
+  },
+  {
+    "method": "patch_kcall10",
+    "desc": "sysent[439].sy_call = _nosys 0xF6F048 (auth rebase, div=0xBCAD, next=2) [kcall10 low-risk]",
+    "va": 18446741874811397536,
+    "va_hex": "0xFFFFFE000774E5A0",
+    "foff_hex": "0x0074A5A0"
+  },
+  {
+    "method": "patch_kcall10",
+    "desc": "sysent[439].sy_return_type = 1 [kcall10 low-risk]",
+    "va": 18446741874811397552,
+    "va_hex": "0xFFFFFE000774E5B0",
+    "foff_hex": "0x0074A5B0"
+  },
+  {
+    "method": "patch_kcall10",
+    "desc": "sysent[439].sy_narg=0,sy_arg_bytes=0 [kcall10 low-risk]",
+    "va": 18446741874811397556,
+    "va_hex": "0xFFFFFE000774E5B4",
+    "foff_hex": "0x0074A5B4"
+  },
+  {
+    "method": "patch_load_dylinker",
+    "desc": "b #0x44 [_load_dylinker policy bypass]",
+    "va": 18446741874820906704,
+    "va_hex": "0xFFFFFE000805FED0",
+    "foff_hex": "0x0105BED0"
+  },
+  {
+    "method": "patch_mac_mount",
+    "desc": "NOP [___mac_mount deny branch]",
+    "va": 18446741874817057376,
+    "va_hex": "0xFFFFFE0007CB4260",
+    "foff_hex": "0x00CB0260"
+  },
+  {
+    "method": "patch_nvram_verify_permission",
+    "desc": "NOP [verifyPermission NVRAM]",
+    "va": 18446741874822876196,
+    "va_hex": "0xFFFFFE0008240C24",
+    "foff_hex": "0x0123CC24"
+  },
+  {
+    "method": "patch_post_validation_additional",
+    "desc": "cmp w0,w0 [postValidation additional fallback]",
+    "va": 18446741874827069280,
+    "va_hex": "0xFFFFFE0008640760",
+    "foff_hex": "0x0163C760"
+  },
+  {
+    "method": "patch_proc_pidinfo",
+    "desc": "NOP [_proc_pidinfo pid-0 guard A]",
+    "va": 18446741874820964152,
+    "va_hex": "0xFFFFFE000806DF38",
+    "foff_hex": "0x01069F38"
+  },
+  {
+    "method": "patch_proc_pidinfo",
+    "desc": "NOP [_proc_pidinfo pid-0 guard B]",
+    "va": 18446741874820964160,
+    "va_hex": "0xFFFFFE000806DF40",
+    "foff_hex": "0x01069F40"
+  },
+  {
+    "method": "patch_proc_security_policy",
+    "desc": "mov x0,#0 [_proc_security_policy]",
+    "va": 18446741874820974064,
+    "va_hex": "0xFFFFFE00080705F0",
+    "foff_hex": "0x0106C5F0"
+  },
+  {
+    "method": "patch_proc_security_policy",
+    "desc": "ret [_proc_security_policy]",
+    "va": 18446741874820974068,
+    "va_hex": "0xFFFFFE00080705F4",
+    "foff_hex": "0x0106C5F4"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_fsgetpath]",
+    "va": 18446741874841172760,
+    "va_hex": "0xFFFFFE00093B3B18",
+    "foff_hex": "0x023AFB18"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_fsgetpath]",
+    "va": 18446741874841172764,
+    "va_hex": "0xFFFFFE00093B3B1C",
+    "foff_hex": "0x023AFB1C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_unlink]",
+    "va": 18446741874841178368,
+    "va_hex": "0xFFFFFE00093B5100",
+    "foff_hex": "0x023B1100"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_unlink]",
+    "va": 18446741874841178372,
+    "va_hex": "0xFFFFFE00093B5104",
+    "foff_hex": "0x023B1104"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_truncate]",
+    "va": 18446741874841179096,
+    "va_hex": "0xFFFFFE00093B53D8",
+    "foff_hex": "0x023B13D8"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_truncate]",
+    "va": 18446741874841179100,
+    "va_hex": "0xFFFFFE00093B53DC",
+    "foff_hex": "0x023B13DC"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_stat]",
+    "va": 18446741874841179456,
+    "va_hex": "0xFFFFFE00093B5540",
+    "foff_hex": "0x023B1540"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_stat]",
+    "va": 18446741874841179460,
+    "va_hex": "0xFFFFFE00093B5544",
+    "foff_hex": "0x023B1544"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_setutimes]",
+    "va": 18446741874841179816,
+    "va_hex": "0xFFFFFE00093B56A8",
+    "foff_hex": "0x023B16A8"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_setutimes]",
+    "va": 18446741874841179820,
+    "va_hex": "0xFFFFFE00093B56AC",
+    "foff_hex": "0x023B16AC"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_setowner]",
+    "va": 18446741874841180160,
+    "va_hex": "0xFFFFFE00093B5800",
+    "foff_hex": "0x023B1800"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_setowner]",
+    "va": 18446741874841180164,
+    "va_hex": "0xFFFFFE00093B5804",
+    "foff_hex": "0x023B1804"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_setmode]",
+    "va": 18446741874841180504,
+    "va_hex": "0xFFFFFE00093B5958",
+    "foff_hex": "0x023B1958"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_setmode]",
+    "va": 18446741874841180508,
+    "va_hex": "0xFFFFFE00093B595C",
+    "foff_hex": "0x023B195C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_setflags]",
+    "va": 18446741874841181164,
+    "va_hex": "0xFFFFFE00093B5BEC",
+    "foff_hex": "0x023B1BEC"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_setflags]",
+    "va": 18446741874841181168,
+    "va_hex": "0xFFFFFE00093B5BF0",
+    "foff_hex": "0x023B1BF0"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_setextattr]",
+    "va": 18446741874841181780,
+    "va_hex": "0xFFFFFE00093B5E54",
+    "foff_hex": "0x023B1E54"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_setextattr]",
+    "va": 18446741874841181784,
+    "va_hex": "0xFFFFFE00093B5E58",
+    "foff_hex": "0x023B1E58"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_setattrlist]",
+    "va": 18446741874841182168,
+    "va_hex": "0xFFFFFE00093B5FD8",
+    "foff_hex": "0x023B1FD8"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_setattrlist]",
+    "va": 18446741874841182172,
+    "va_hex": "0xFFFFFE00093B5FDC",
+    "foff_hex": "0x023B1FDC"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_readlink]",
+    "va": 18446741874841183544,
+    "va_hex": "0xFFFFFE00093B6538",
+    "foff_hex": "0x023B2538"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_readlink]",
+    "va": 18446741874841183548,
+    "va_hex": "0xFFFFFE00093B653C",
+    "foff_hex": "0x023B253C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_open]",
+    "va": 18446741874841183888,
+    "va_hex": "0xFFFFFE00093B6690",
+    "foff_hex": "0x023B2690"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_open]",
+    "va": 18446741874841183892,
+    "va_hex": "0xFFFFFE00093B6694",
+    "foff_hex": "0x023B2694"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_listextattr]",
+    "va": 18446741874841184472,
+    "va_hex": "0xFFFFFE00093B68D8",
+    "foff_hex": "0x023B28D8"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_listextattr]",
+    "va": 18446741874841184476,
+    "va_hex": "0xFFFFFE00093B68DC",
+    "foff_hex": "0x023B28DC"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_link]",
+    "va": 18446741874841184860,
+    "va_hex": "0xFFFFFE00093B6A5C",
+    "foff_hex": "0x023B2A5C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_link]",
+    "va": 18446741874841184864,
+    "va_hex": "0xFFFFFE00093B6A60",
+    "foff_hex": "0x023B2A60"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_ioctl]",
+    "va": 18446741874841186588,
+    "va_hex": "0xFFFFFE00093B711C",
+    "foff_hex": "0x023B311C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_ioctl]",
+    "va": 18446741874841186592,
+    "va_hex": "0xFFFFFE00093B7120",
+    "foff_hex": "0x023B3120"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_getextattr]",
+    "va": 18446741874841187332,
+    "va_hex": "0xFFFFFE00093B7404",
+    "foff_hex": "0x023B3404"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_getextattr]",
+    "va": 18446741874841187336,
+    "va_hex": "0xFFFFFE00093B7408",
+    "foff_hex": "0x023B3408"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_getattrlist]",
+    "va": 18446741874841187680,
+    "va_hex": "0xFFFFFE00093B7560",
+    "foff_hex": "0x023B3560"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_getattrlist]",
+    "va": 18446741874841187684,
+    "va_hex": "0xFFFFFE00093B7564",
+    "foff_hex": "0x023B3564"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_exchangedata]",
+    "va": 18446741874841188128,
+    "va_hex": "0xFFFFFE00093B7720",
+    "foff_hex": "0x023B3720"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_exchangedata]",
+    "va": 18446741874841188132,
+    "va_hex": "0xFFFFFE00093B7724",
+    "foff_hex": "0x023B3724"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_deleteextattr]",
+    "va": 18446741874841189028,
+    "va_hex": "0xFFFFFE00093B7AA4",
+    "foff_hex": "0x023B3AA4"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_deleteextattr]",
+    "va": 18446741874841189032,
+    "va_hex": "0xFFFFFE00093B7AA8",
+    "foff_hex": "0x023B3AA8"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_create]",
+    "va": 18446741874841189416,
+    "va_hex": "0xFFFFFE00093B7C28",
+    "foff_hex": "0x023B3C28"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_create]",
+    "va": 18446741874841189420,
+    "va_hex": "0xFFFFFE00093B7C2C",
+    "foff_hex": "0x023B3C2C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_chroot]",
+    "va": 18446741874841190132,
+    "va_hex": "0xFFFFFE00093B7EF4",
+    "foff_hex": "0x023B3EF4"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_chroot]",
+    "va": 18446741874841190136,
+    "va_hex": "0xFFFFFE00093B7EF8",
+    "foff_hex": "0x023B3EF8"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_proc_check_set_cs_info2]",
+    "va": 18446741874841190476,
+    "va_hex": "0xFFFFFE00093B804C",
+    "foff_hex": "0x023B404C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_proc_check_set_cs_info2]",
+    "va": 18446741874841190480,
+    "va_hex": "0xFFFFFE00093B8050",
+    "foff_hex": "0x023B4050"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_proc_check_set_cs_info]",
+    "va": 18446741874841191576,
+    "va_hex": "0xFFFFFE00093B8498",
+    "foff_hex": "0x023B4498"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_proc_check_set_cs_info]",
+    "va": 18446741874841191580,
+    "va_hex": "0xFFFFFE00093B849C",
+    "foff_hex": "0x023B449C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_proc_check_get_cs_info]",
+    "va": 18446741874841192124,
+    "va_hex": "0xFFFFFE00093B86BC",
+    "foff_hex": "0x023B46BC"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_proc_check_get_cs_info]",
+    "va": 18446741874841192128,
+    "va_hex": "0xFFFFFE00093B86C0",
+    "foff_hex": "0x023B46C0"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_getattr]",
+    "va": 18446741874841194768,
+    "va_hex": "0xFFFFFE00093B9110",
+    "foff_hex": "0x023B5110"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_getattr]",
+    "va": 18446741874841194772,
+    "va_hex": "0xFFFFFE00093B9114",
+    "foff_hex": "0x023B5114"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "mov x0,#0 [_hook_vnode_check_exec]",
+    "va": 18446741874841293164,
+    "va_hex": "0xFFFFFE00093D116C",
+    "foff_hex": "0x023CD16C"
+  },
+  {
+    "method": "patch_sandbox_hooks_extended",
+    "desc": "ret [_hook_vnode_check_exec]",
+    "va": 18446741874841293168,
+    "va_hex": "0xFFFFFE00093D1170",
+    "foff_hex": "0x023CD170"
+  },
+  {
+    "method": "patch_shared_region_map",
+    "desc": "cmp x0,x0 [_shared_region_map_and_slide_setup]",
+    "va": 18446741874821037596,
+    "va_hex": "0xFFFFFE000807FE1C",
+    "foff_hex": "0x0107BE1C"
+  },
+  {
+    "method": "patch_spawn_validate_persona",
+    "desc": "b #0x130 [_spawn_validate_persona gate]",
+    "va": 18446741874820204720,
+    "va_hex": "0xFFFFFE0007FB48B0",
+    "foff_hex": "0x00FB08B0"
+  },
+  {
+    "method": "patch_syscallmask_apply_to_proc",
+    "desc": "mov x0,xzr [_syscallmask_apply_to_proc low-risk]",
+    "va": 18446741874841151204,
+    "va_hex": "0xFFFFFE00093AE6E4",
+    "foff_hex": "0x023AA6E4"
+  },
+  {
+    "method": "patch_syscallmask_apply_to_proc",
+    "desc": "retab [_syscallmask_apply_to_proc low-risk]",
+    "va": 18446741874841151208,
+    "va_hex": "0xFFFFFE00093AE6E8",
+    "foff_hex": "0x023AA6E8"
+  },
+  {
+    "method": "patch_task_conversion_eval_internal",
+    "desc": "cmp xzr,xzr [_task_conversion_eval_internal]",
+    "va": 18446741874815337472,
+    "va_hex": "0xFFFFFE0007B10400",
+    "foff_hex": "0x00B0C400"
+  },
+  {
+    "method": "patch_task_for_pid",
+    "desc": "NOP [_task_for_pid proc_ro copy]",
+    "va": 18446741874820567328,
+    "va_hex": "0xFFFFFE000800D120",
+    "foff_hex": "0x01009120"
+  },
+  {
+    "method": "patch_thid_should_crash",
+    "desc": "zero [_thid_should_crash]",
+    "va": 18446741874810612552,
+    "va_hex": "0xFFFFFE000768EB48",
+    "foff_hex": "0x0068AB48"
+  },
+  {
+    "method": "patch_vm_fault_enter_prepare",
+    "desc": "NOP [_vm_fault_enter_prepare]",
+    "va": 18446741874816027020,
+    "va_hex": "0xFFFFFE0007BB898C",
+    "foff_hex": "0x00BB498C"
+  },
+  {
+    "method": "patch_vm_map_protect",
+    "desc": "b #0x48C [_vm_map_protect]",
+    "va": 18446741874816125352,
+    "va_hex": "0xFFFFFE0007BD09A8",
+    "foff_hex": "0x00BCC9A8"
+  }
+]

@@ -20,7 +20,12 @@ Virtual iPhone boot tool using Apple's Virtualization.framework with PCC researc
 - If blocked or waiting on user input, write the exact blocker and next action in `/TODO.md`.
 - If not exists, continue existing work until complete. If exists, follow `/TODO.md` instructions.
 
-For any changes applying new patches, also update research/patch_comparison_all_variants.md. Dont forget this.
+For any changes applying new patches, also update research/00_patch_comparison_all_variants.md. Dont forget this.
+
+## Local Skills
+
+- If working on kernel analysis, symbolication lookups, or kernel patch reasoning, read `skills/kernel-analysis-vphone600/SKILL.md` first.
+- Use this skill as the default procedure for `vphone600` kernel work.
 
 ## Firmware Variants
 

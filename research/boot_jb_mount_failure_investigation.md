@@ -200,4 +200,24 @@ These do not prove causality yet, but they are the primary JB-only candidates af
    - first JB-1 (launchd inject + jetsam patch)
    - then JB-2 (preboot bootstrap)
    - then JB-3 (BaseBin hooks)
-   and capture first regression point.
+     and capture first regression point.
+
+## 2026-03-05 Follow-up (Data-Protection / SEP UserClient MACF)
+
+A later failure mode moved past mount-phase and failed in `data-protection`:
+
+- `IOUC AppleSEPUserClient failed MACF ... seputil`
+- `Boot task failed: data-protection - exited due to exit(60)`
+
+This was traced to unpatched IOKit MAC policy hook range (`ops[201..210]`) in
+the sandbox extended hook set. Mitigation and patch details are documented in:
+
+- `research/boot_data_protection_seputil_macf_investigation.md`
+
+Follow-up (2026-03-06):
+
+- Even after `ops[201..210]` extension, runtime still showed:
+  - `IOUC AppleAPFSUserClient failed MACF ...`
+  - `IOUC AppleSEPUserClient failed MACF ...`
+- A second-stage mitigation was added:
+  - `patch_iouc_failed_macf` (central IOUC MACF gate low-risk early return).

@@ -159,13 +159,13 @@ Regular and Development both use the same kernel patch entrypoint:
 
 ### Verification Results
 
-| Item | Patch | File Offset | VA | Before | After | Status |
-| --- | --- | ---: | ---: | --- | --- | --- |
-| 6 | `_PE_i_can_has_debugger` | `0x012C8138` | `0xFFFFFE00082CC138` | `adrp x8, ...` | `mov x0, #1` | OK |
-| 7 | `_PE_i_can_has_debugger` | `0x012C813C` | `0xFFFFFE00082CC13C` | `cbz x0, ...` | `ret` | OK |
-| 8 | TXM post-validation | `0x00FFAB98` | `0xFFFFFE0007FFEB98` | `tbnz w8,#0,...` | `nop` | OK |
-| 9 | postValidation compare | `0x016405AC` | `0xFFFFFE00086445AC` | `cmp w0, #2` | `cmp w0, w0` | OK |
-| 10 (@1) | dyld policy | `0x016410BC` | `0xFFFFFE00086450BC` | `bl 0xFFFFFE0007FFD304` | `mov w0, #1` | OK |
+| Item    | Patch                    |  File Offset |                   VA | Before                  | After        | Status |
+| ------- | ------------------------ | -----------: | -------------------: | ----------------------- | ------------ | ------ |
+| 6       | `_PE_i_can_has_debugger` | `0x012C8138` | `0xFFFFFE00082CC138` | `adrp x8, ...`          | `mov x0, #1` | OK     |
+| 7       | `_PE_i_can_has_debugger` | `0x012C813C` | `0xFFFFFE00082CC13C` | `cbz x0, ...`           | `ret`        | OK     |
+| 8       | TXM post-validation      | `0x00FFAB98` | `0xFFFFFE0007FFEB98` | `tbnz w8,#0,...`        | `nop`        | OK     |
+| 9       | postValidation compare   | `0x016405AC` | `0xFFFFFE00086445AC` | `cmp w0, #2`            | `cmp w0, w0` | OK     |
+| 10 (@1) | dyld policy              | `0x016410BC` | `0xFFFFFE00086450BC` | `bl 0xFFFFFE0007FFD304` | `mov w0, #1` | OK     |
 
 ### Structural Evidence (IDA + raw context)
 

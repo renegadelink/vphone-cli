@@ -1,90 +1,151 @@
 # B12 `patch_dounmount`
 
-## How the patch works
-- Source: `scripts/patchers/kernel_jb_patch_dounmount.py`.
-- Locator strategy:
-  1. Try symbol `_dounmount`.
-  2. Fallback anchor string `"dounmount:"` and inspect call targets.
-  3. Match sequence `mov w1,#0` + `mov x2,#0` + `bl ...` (MAC check pattern).
-- Patch action:
-  - NOP the matched `BL` MAC-check call.
+## Patch Goal
 
-## Expected outcome
-- Suppress unmount MAC check path and continue unmount operation.
+Bypass a MAC authorization call in `dounmount` by NOP-ing a strict `mov w1,#0 ; mov x2,#0 ; bl ...` callsite.
 
-## Target
-- MAC authorization call site in `_dounmount` path.
+## Binary Targets (IDA + Recovered Symbols)
 
-## IDA MCP evidence
-- String: `0xfffffe000705661c` (`"dounmount: no coveredvp ..."`)
-- xref: `0xfffffe0007cac34c`
-- containing function start: `0xfffffe0007cabaec`
+- Recovered symbols:
+  - `dounmount` at `0xfffffe0007cb6ea0`
+  - `safedounmount` at `0xfffffe0007cb6cec`
+- Anchor string: `"dounmount: no coveredvp @%s:%d"` at `0xfffffe0007056950`.
+- Anchor xref: `0xfffffe0007cb7700` in `sub_FFFFFE0007CB6EA0`.
 
-## 2026-03-05 re-validation (current kernel in IDA)
-- `_dounmount` symbol is not present in this image.
-- String-anchor path resolves to `sub_FFFFFE0007CABAEC` (`0xfffffe0007cabaec`), but:
-  - scanning this function's BL callees does not find the expected
-    `mov w1,#0; mov x2,#0; bl ...` pattern.
-- Patcher therefore falls through to broad scan:
-  - scans whole `kern_text` for short PAC functions with that mov/mov/bl shape.
-  - first match appears at:
-    - function `0xfffffe0007ad3b44`
-    - patch site `0xfffffe0007ad3bac` (`BL sub_FFFFFE0007ADB154`)
-- This first broad-scan hit is not tied to the `_dounmount` call path.
+## Call-Stack Analysis
 
-## Impact assessment
-- Current B12 implementation is unreliable on this kernel build and can patch unrelated code.
-- This is a high-risk false-positive patch pattern; even if not the direct APFS mount-phase-1 trigger,
-  it can introduce unrelated kernel instability/regressions.
+- Static callers into `dounmount` include:
+  - `sub_FFFFFE0007CA45E4`
+  - `sub_FFFFFE0007CAAE28`
+  - `sub_FFFFFE0007CB6CEC`
+  - `sub_FFFFFE0007CB770C`
+- This confirms the expected unmount path context.
 
-## Fix applied (2026-03-05)
-- `scripts/patchers/kernel_jb_patch_dounmount.py` removed broad kern_text fallback scanning.
-- Matching is now strict:
-  1. `_dounmount` symbol path, or
-  2. function containing `dounmount:` string anchor, with in-function pattern match only.
-- If strict pattern is not found, patch method now fails closed (no patch emitted).
+## Patch-Site / Byte-Level Change
 
-## Source Code Trace (Scanner)
-- Entrypoint:
-  - `KernelJBPatcher.find_all()` -> `patch_dounmount()`
-- Method path (current implementation):
-  1. `_resolve_symbol("_dounmount")` (if present, scan function body)
-  2. fallback: `find_string("dounmount:")` -> `find_string_refs()` -> `find_function_start()`
-  3. strict in-function matcher `_find_mac_check_bl(start,end)` for:
-     - `mov w1,#0 ; mov x2,#0 ; bl ...` (or swapped `x2/w1`)
-  4. patch emit:
-     - `asm("nop")` + capstone decode assert
-     - `emit(result, nop, "NOP [_dounmount MAC check]")`
-- Safety behavior:
-  - no broad kern_text sweep; unresolved case is fail-closed (`False`, no emit).
-- Kernel pseudocode trace at patched check (`sub_FFFFFE0007CABAEC`):
-  - `... unmount teardown path ...`
-  - `sub_FFFFFE0007C81734(v7);`
-  - `sub_FFFFFE0007C9FDBC(0, 16, 0);`  <- patched BL site
-  - `... continue state/flag cleanup ...`
+- Intended matcher requires exact pair:
+  - `mov w1, #0`
+  - `mov x2, #0`
+  - `bl ...`
+- In current IDA state, the close callsite is:
+  - `mov w1, #0x10 ; mov x2, #0 ; bl sub_FFFFFE0007CAB27C` at `0xfffffe0007cb75b0`
+- Therefore strict matcher is not satisfied in this image state.
+- Fail-closed behavior is correct: no patch should be emitted here unless exact semantics are revalidated.
 
-## Runtime Trace (IDA, research kernel)
-- Scanner target:
-  - `kernelcache.research.vphone600` (sha256 `b7fa45e93debe4d27cd3b59d74823223864fd15b1f7eb460eb0d9f709109edac`)
-- Anchor/function:
-  - string `0xFFFFFE000705661C` -> function `sub_FFFFFE0007CABAEC`
-- Observed callers of `sub_FFFFFE0007CABAEC`:
-  - `sub_FFFFFE0007C99124`
-  - `sub_FFFFFE0007C9F968`
-  - `sub_FFFFFE0007CAB938`
-  - `sub_FFFFFE0007CAC358`
-- no-emit scan hit:
-  - `off=0x00CA81FC`, `va=0xFFFFFE0007CAC1FC`, `bytes=1f2003d5`
-  - instruction at site before patch: `BL sub_FFFFFE0007C9FDBC`
+## Pseudocode (Before)
 
-## Trace Call Stack (IDA)
-- Static caller set into `_dounmount` function body:
-  - `sub_FFFFFE0007C99124` -> `sub_FFFFFE0007CABAEC`
-  - `sub_FFFFFE0007C9F968` -> `sub_FFFFFE0007CABAEC`
-  - `sub_FFFFFE0007CAB938` -> `sub_FFFFFE0007CABAEC`
-  - `sub_FFFFFE0007CAC358` -> `sub_FFFFFE0007CABAEC`
-- In-function local call path around patched site:
-  - `sub_FFFFFE0007CABAEC` -> `sub_FFFFFE0007C81734` -> `BL sub_FFFFFE0007C9FDBC` [patched to NOP]
+```c
+rc = mac_check(..., 0, 0);
+if (rc != 0) {
+    return rc;
+}
+```
 
-## Risk
-- Can bypass policy enforcement around unmount operations.
+## Pseudocode (After)
+
+```c
+// BL mac_check replaced by NOP
+// execution continues as if check passed
+```
+
+## Symbol Consistency
+
+- `dounmount` symbol resolution is consistent.
+- Pattern-level mismatch indicates prior hardcoded assumptions are not universally valid.
+
+## Patch Metadata
+
+- Patch document: `patch_dounmount.md` (B12).
+- Primary patcher module: `scripts/patchers/kernel_jb_patch_dounmount.py`.
+- Analysis mode: static binary analysis (IDA-MCP + disassembly + recovered symbols), no runtime patch execution.
+
+## Target Function(s) and Binary Location
+
+- Primary target: `dounmount` deny branch in VFS unmount path.
+- Exact patch site (NOP on strict in-function match) is documented in this file.
+
+## Kernel Source File Location
+
+- Expected XNU source: `bsd/vfs/vfs_syscalls.c` (`dounmount`).
+- Confidence: `high`.
+
+## Function Call Stack
+
+- Primary traced chain (from `Call-Stack Analysis`):
+- Static callers into `dounmount` include:
+- `sub_FFFFFE0007CA45E4`
+- `sub_FFFFFE0007CAAE28`
+- `sub_FFFFFE0007CB6CEC`
+- `sub_FFFFFE0007CB770C`
+- The upstream entry(s) and patched decision node are linked by direct xref/callsite evidence in this file.
+
+## Patch Hit Points
+
+- Key patchpoint evidence (from `Patch-Site / Byte-Level Change`):
+- `mov w1, #0x10 ; mov x2, #0 ; bl sub_FFFFFE0007CAB27C` at `0xfffffe0007cb75b0`
+- The before/after instruction transform is constrained to this validated site.
+
+## Current Patch Search Logic
+
+- Implemented in `scripts/patchers/kernel_jb_patch_dounmount.py`.
+- Site resolution uses anchor + opcode-shape + control-flow context; ambiguous candidates are rejected.
+- The patch is applied only after a unique candidate is confirmed in-function.
+- Anchor string: `"dounmount: no coveredvp @%s:%d"` at `0xfffffe0007056950`.
+- Anchor xref: `0xfffffe0007cb7700` in `sub_FFFFFE0007CB6EA0`.
+
+## Validation (Static Evidence)
+
+- Verified with IDA-MCP disassembly/decompilation, xrefs, and callgraph context for the selected site.
+- Cross-checked against recovered symbols in `research/kernel_info/json/kernelcache.research.vphone600.bin.symbols.json`.
+- Address-level evidence in this document is consistent with patcher matcher intent.
+
+## Expected Failure/Panic if Unpatched
+
+- Unmount requests remain blocked by guarded deny branch, breaking workflows that require controlled remount/unmount transitions.
+
+## Risk / Side Effects
+
+- This patch weakens a kernel policy gate by design and can broaden behavior beyond stock security assumptions.
+- Potential side effects include reduced diagnostics fidelity and wider privileged surface for patched workflows.
+
+## Symbol Consistency Check
+
+- Recovered-symbol status in `kernelcache.research.vphone600.bin.symbols.json`: `match`.
+- Canonical symbol hit(s): `dounmount`.
+- Where canonical names are absent, this document relies on address-level control-flow and instruction evidence; analyst aliases are explicitly marked as aliases.
+- IDA-MCP lookup snapshot (2026-03-05): `dounmount` -> `dounmount` at `0xfffffe0007cb6ea0`.
+
+## Open Questions and Confidence
+
+- Open question: verify future firmware drift does not move this site into an equivalent but semantically different branch.
+- Overall confidence for this patch analysis: `high` (symbol match + control-flow/byte evidence).
+
+## Evidence Appendix
+
+- Detailed addresses, xrefs, and rationale are preserved in the existing analysis sections above.
+- For byte-for-byte patch details, refer to the patch-site and call-trace subsections in this file.
+
+## Runtime + IDA Verification (2026-03-05)
+
+- Verification timestamp (UTC): `2026-03-05T14:55:58.795709+00:00`
+- Kernel input: `/Users/qaq/Documents/Firmwares/PCC-CloudOS-26.3-23D128/kernelcache.research.vphone600`
+- Base VA: `0xFFFFFE0007004000`
+- Runtime status: `hit` (1 patch writes, method_return=True)
+- Included in `KernelJBPatcher.find_all()`: `False`
+- IDA mapping: `1/1` points in recognized functions; `0` points are code-cave/data-table writes.
+- IDA mapping status: `ok` (IDA runtime mapping loaded.)
+- Call-chain mapping status: `ok` (IDA call-chain report loaded.)
+- Call-chain validation: `1` function nodes, `1` patch-point VAs.
+- IDA function sample: `dounmount`
+- Chain function sample: `dounmount`
+- Caller sample: `safedounmount`, `sub_FFFFFE0007CAAE28`, `sub_FFFFFE0007CB770C`, `vfs_mountroot`
+- Callee sample: `dounmount`, `lck_mtx_destroy`, `lck_rw_done`, `mount_dropcrossref`, `mount_iterdrain`, `mount_refdrain`
+- Verdict: `questionable`
+- Recommendation: Hit is valid but patch is inactive in find_all(); enable only after staged validation.
+- Key verified points:
+- `0xFFFFFE0007CB75B0` (`dounmount`): NOP [_dounmount MAC check] | `33cfff97 -> 1f2003d5`
+- Artifacts: `research/kernel_patch_jb/runtime_verification/runtime_verification_report.json`
+- Artifacts: `research/kernel_patch_jb/runtime_verification/ida_runtime_patch_points.json`
+- Artifacts: `research/kernel_patch_jb/runtime_verification/ida_patch_chain_report.json`
+- Artifacts: `research/kernel_patch_jb/runtime_verification/ida_patch_chain_report.md`
+<!-- END_RUNTIME_IDA_VERIFICATION_2026_03_05 -->

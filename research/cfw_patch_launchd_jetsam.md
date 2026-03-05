@@ -1,6 +1,7 @@
 # CFW JB-1 `patch-launchd-jetsam`
 
 ## How the patch works
+
 - Source: `scripts/patchers/cfw_patch_jetsam.py`.
 - Locator strategy:
   1. Find one of these anchor strings in launchd:
@@ -15,6 +16,7 @@
     `asm_at("b #<target>", patch_off)`.
 
 ## Source Code Trace (Scanner)
+
 - Entrypoint:
   - `scripts/patchers/cfw.py` -> command `patch-launchd-jetsam`
   - dispatches to `patch_launchd_jetsam(filepath)`
@@ -27,6 +29,7 @@
   6. `asm_at("b #target", patch_off)` and binary overwrite
 
 ## Validation Evidence (current workspace)
+
 - Install pipeline wiring confirmed:
   - `scripts/cfw_install_jb.sh` JB-1 stage calls:
     - `inject-dylib ... /cores/launchdhook.dylib`
@@ -38,14 +41,17 @@
   - workspace currently has no extracted iOS launchd sample binary/log artifact for deterministic offline replay.
 
 ## Risk Assessment
+
 - Current algorithm is fully dynamic and avoids hardcoded offsets.
 - But branch selection is still broad (backward window + earliest matching conditional to return block).
 - Without binary-level replay evidence on current target launchd, there is residual false-hit risk.
 
 ## Status
+
 - **Still unproven** (possible working, possible mis-hit) under strict confidence gate.
 
 ## Next Verification Step
+
 - Obtain one actual `/mnt1/sbin/launchd.bak` sample from current target build and capture:
   - before/after patch disassembly around `patch_off`
   - matched anchor string VA + xref VA

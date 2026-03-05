@@ -96,6 +96,35 @@ IDA database used: `/Users/qaq/Desktop/kernelcache.research.vphone600.macho`.
 
 Note: this IDA DB already had those two sandbox entry points rendered as stubs (`mov x0,#0; ret`) from prior work; raw clean-byte "before" evidence above is taken from the fresh IM4P payload, not from patched IDB bytes.
 
+## XNU Reference Cross-Validation (2026-03-06)
+
+Reference source: `research/xnu` (apple-oss-distributions/xnu, shallow clone).
+
+What XNU confirms:
+
+- `ENOATTR` is `93` (`bsd/sys/errno.h`), matching the mount-side `Attribute not found` decode path used in analysis docs.
+- MACF file/mount hooks exist in policy ops:
+  - `mpo_file_check_mmap`
+  - `mpo_mount_check_mount`
+  - `security/mac_policy.h`
+- Corresponding call sites are present in framework/syscall paths:
+  - `mac_file_check_mmap` -> `MAC_CHECK(file_check_mmap, ...)` (`security/mac_file.c`)
+  - `mac_mount_check_mount` -> `MAC_CHECK(mount_check_mount, ...)` (`security/mac_vfs.c`)
+  - mount syscall path invokes `mac_mount_check_mount` (`bsd/vfs/vfs_syscalls.c`)
+
+What XNU cannot directly confirm for this patch group:
+
+- APFS-private targets in Patch 16:
+  - `handle_get_dev_by_role`
+  - `APFSVolumeRoleFind`
+  - entitlement string `com.apple.apfs.get-dev-by-role`
+- These symbols/paths are not present in open-source XNU tree.
+
+Interpretation:
+
+- Patch 17-20 semantics are additionally supported by XNU MACF interfaces/call wiring.
+- Patch 16 target correctness remains IDA/runtime-byte authoritative for the shipping kernelcache.
+
 ## Result
 
 Status: **working for now**.

@@ -13,6 +13,19 @@ class KernelJBPatchSandboxExtendedMixin:
             return False
 
         HOOK_INDICES_EXT = {
+            # IOKit MACF hooks (ops +0x648..+0x690 range on current kernels).
+            # Canonical mpo_* names are not fully symbol-resolved in local KC data,
+            # so keep index-stable labels to avoid misnaming.
+            "iokit_check_201": 201,
+            "iokit_check_202": 202,
+            "iokit_check_203": 203,
+            "iokit_check_204": 204,
+            "iokit_check_205": 205,
+            "iokit_check_206": 206,
+            "iokit_check_207": 207,
+            "iokit_check_208": 208,
+            "iokit_check_209": 209,
+            "iokit_check_210": 210,
             "vnode_check_getattr": 245,
             "proc_check_get_cs_info": 249,
             "proc_check_set_cs_info": 250,

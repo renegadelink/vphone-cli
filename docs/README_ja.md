@@ -20,11 +20,13 @@ Apple の Virtualization.framework と PCC の研究用 VM インフラを使用
 
 | バリアント        | ブートチェーン |     CFW     | Make ターゲット                    |
 | ----------------- | :------------: | :---------: | ---------------------------------- |
-| **通常版**        |   38 パッチ    | 10 フェーズ | `fw_patch` + `cfw_install`         |
-| **開発版**        |   47 パッチ    | 12 フェーズ | `fw_patch_dev` + `cfw_install_dev` |
-| **脱獄版（WIP）** |   84 パッチ    | 14 フェーズ | `fw_patch_jb` + `cfw_install_jb`   |
+| **通常版**        |   41 パッチ    | 10 フェーズ | `fw_patch` + `cfw_install`         |
+| **開発版**        |   52 パッチ    | 12 フェーズ | `fw_patch_dev` + `cfw_install_dev` |
+| **脱獄版（WIP）** | 66 / 78 パッチ | 14 フェーズ | `fw_patch_jb` + `cfw_install_jb`   |
 
-詳細なコンポーネントごとの内訳については [research/patch_comparison_all_variants.md](../research/patch_comparison_all_variants.md) を参照してください。
+`66` は JB のデフォルトカーネルパッチ計画、`78` はデフォルト + オプションカーネルパッチ（`VPHONE_JB_ENABLE_OPTIONAL=1`）です。
+
+詳細なコンポーネントごとの内訳については [research/00_patch_comparison_all_variants.md](../research/00_patch_comparison_all_variants.md) を参照してください。
 
 ## 前提条件
 

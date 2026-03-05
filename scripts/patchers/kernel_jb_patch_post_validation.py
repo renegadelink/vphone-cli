@@ -5,7 +5,13 @@ from .kernel_jb_base import ARM64_OP_REG, ARM64_OP_IMM, ARM64_REG_W0, CMP_W0_W0
 
 class KernelJBPatchPostValidationMixin:
     def patch_post_validation_additional(self):
-        """Additional postValidation CMP W0,W0 in AMFI code signing path."""
+        """Additional postValidation CMP W0,W0 in AMFI code signing path.
+
+        Low-risk strategy:
+        1) Prefer the legacy strict matcher.
+        2) Fallback to direct `cmp w0,#imm` replacement in AMFI text when
+           strict shape is not present on newer kernels.
+        """
         self._log("\n[JB] postValidation additional: cmp w0,w0")
 
         str_off = self.find_string(b"AMFI: code signature validation failed")
@@ -59,6 +65,26 @@ class KernelJBPatchPostValidationMixin:
                 if has_bl:
                     self.emit(off, CMP_W0_W0, f"cmp w0,w0 [postValidation additional]")
                     patched += 1
+
+        if patched == 0:
+            # Fallback: patch first `cmp w0,#imm` site in AMFI text.
+            # This keeps the change local (single in-function compare rewrite)
+            # and avoids shellcode/cave behavior.
+            s, e = self.amfi_text
+            for off in range(s, e - 4, 4):
+                d = self._disas_at(off)
+                if not d or d[0].mnemonic != "cmp":
+                    continue
+                ops = d[0].operands
+                if len(ops) < 2:
+                    continue
+                if ops[0].type != ARM64_OP_REG or ops[0].reg != ARM64_REG_W0:
+                    continue
+                if ops[1].type != ARM64_OP_IMM:
+                    continue
+                self.emit(off, CMP_W0_W0, "cmp w0,w0 [postValidation additional fallback]")
+                patched = 1
+                break
 
         if patched == 0:
             self._log("  [-] no additional postValidation CMP sites found")

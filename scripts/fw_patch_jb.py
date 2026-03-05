@@ -26,6 +26,13 @@ from patchers.iboot_jb import IBootJBPatcher
 from patchers.kernel_jb import KernelJBPatcher
 
 
+def _env_enabled(name, default=False):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 def patch_ibss_jb(data):
     p = IBootJBPatcher(data, mode="ibss", label="Loaded iBSS")
     n = p.apply()
@@ -86,20 +93,44 @@ def main():
     print(f"[*] Restore directory: {restore_dir}")
     print(f"[*] Patching {len(COMPONENTS)} boot-chain components (jailbreak mode) ...")
 
+    allow_missing = _env_enabled("VPHONE_FW_PATCH_ALLOW_MISSING", default=False)
+    skipped = []
+
     for name, in_restore, patterns, patch_fn, preserve_payp in COMPONENTS:
         search_base = restore_dir if in_restore else vm_dir
-        path = find_file(search_base, patterns, name)
+        try:
+            path = find_file(search_base, patterns, name)
+        except SystemExit:
+            # AVPBooter is often absent in unpacked firmware-only directories.
+            if name == "AVPBooter" or allow_missing:
+                print(f"[!] Missing component '{name}', skipping this component")
+                skipped.append(name)
+                continue
+            raise
         patch_component(path, patch_fn, name, preserve_payp)
 
     if JB_COMPONENTS:
         print(f"\n[*] Applying {len(JB_COMPONENTS)} JB extension patches ...")
         for name, in_restore, patterns, patch_fn, preserve_payp in JB_COMPONENTS:
             search_base = restore_dir if in_restore else vm_dir
-            path = find_file(search_base, patterns, name)
+            try:
+                path = find_file(search_base, patterns, name)
+            except SystemExit:
+                if allow_missing:
+                    print(f"[!] Missing component '{name}', skipping this component")
+                    skipped.append(name)
+                    continue
+                raise
             patch_component(path, patch_fn, name, preserve_payp)
 
     print(f"\n{'=' * 60}")
-    print(f"  All components patched successfully (jailbreak mode)!")
+    if skipped:
+        print(
+            f"  Components patched with {len(skipped)} skipped missing components:"
+            f" {', '.join(skipped)}"
+        )
+    else:
+        print(f"  All components patched successfully (jailbreak mode)!")
     print(f"{'=' * 60}")
 
 
