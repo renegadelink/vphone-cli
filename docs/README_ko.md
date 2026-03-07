@@ -18,13 +18,13 @@ PCC 리서치 VM 인프라와 Apple의 Virtualization.framework를 사용하여 
 
 보안 우회 수준이 다른 3가지 패치 변형을 사용할 수 있습니다:
 
-| 변형           |  부트 체인   |    CFW    | Make 타겟                          |
-| -------------- | :----------: | :-------: | ---------------------------------- |
-| **일반**       |   41 패치    | 10 페이즈 | `fw_patch` + `cfw_install`         |
-| **개발**       |   52 패치    | 12 페이즈 | `fw_patch_dev` + `cfw_install_dev` |
-| **탈옥**       | 66 / 78 패치 | 14 페이즈 | `fw_patch_jb` + `cfw_install_jb`   |
+| 변형     |  부트 체인   |    CFW    | Make 타겟                                                    |
+| -------- | :----------: | :-------: | ------------------------------------------------------------ |
+| **일반** |   41 패치    | 10 페이즈 | `fw_patch` + `cfw_install`                                   |
+| **개발** |   52 패치    | 12 페이즈 | `fw_patch_dev` + `cfw_install_dev`                           |
+| **탈옥** | 66 / 78 패치 | 14 페이즈 | `fw_patch_jb` + `cfw_install_jb` + `cfw_install_jb_finalize` |
 
-`66`은 JB 기본 커널 패치 플랜, `78`은 기본 + 선택 커널 패치(`VPHONE_JB_ENABLE_OPTIONAL=1`)입니다.
+> `cfw_install_jb_finalize`는 RAM 디스크가 아닌 전체 시스템으로 부팅해야 합니다.
 
 컴포넌트별 상세 분류는 [research/0_binary_patch_comparison.md](../research/0_binary_patch_comparison.md)를 참조하세요.
 

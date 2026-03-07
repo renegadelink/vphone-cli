@@ -18,13 +18,13 @@ Apple の Virtualization.framework と PCC の研究用 VM インフラを使用
 
 セキュリティバイパスのレベルが異なる3つのパッチバリアントが利用可能です：
 
-| バリアント        | ブートチェーン |     CFW     | Make ターゲット                    |
-| ----------------- | :------------: | :---------: | ---------------------------------- |
-| **通常版**        |   41 パッチ    | 10 フェーズ | `fw_patch` + `cfw_install`         |
-| **開発版**        |   52 パッチ    | 12 フェーズ | `fw_patch_dev` + `cfw_install_dev` |
-| **脱獄版**       | 66 / 78 パッチ | 14 フェーズ | `fw_patch_jb` + `cfw_install_jb`   |
+| バリアント | ブートチェーン |     CFW     | Make ターゲット                                              |
+| ---------- | :------------: | :---------: | ------------------------------------------------------------ |
+| **通常版** |   41 パッチ    | 10 フェーズ | `fw_patch` + `cfw_install`                                   |
+| **開発版** |   52 パッチ    | 12 フェーズ | `fw_patch_dev` + `cfw_install_dev`                           |
+| **脱獄版** | 66 / 78 パッチ | 14 フェーズ | `fw_patch_jb` + `cfw_install_jb` + `cfw_install_jb_finalize` |
 
-`66` は JB のデフォルトカーネルパッチ計画、`78` はデフォルト + オプションカーネルパッチ（`VPHONE_JB_ENABLE_OPTIONAL=1`）です。
+> `cfw_install_jb_finalize` はRAMディスクではなく、完全なシステムへの起動が必要です。
 
 詳細なコンポーネントごとの内訳については [research/0_binary_patch_comparison.md](../research/0_binary_patch_comparison.md) を参照してください。
 

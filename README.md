@@ -18,13 +18,13 @@ Boot a virtual iPhone (iOS 26) via Apple's Virtualization.framework using PCC re
 
 Three patch variants are available with increasing levels of security bypass:
 
-| Variant             |   Boot Chain    |    CFW    | Make Targets                       |
-| ------------------- | :-------------: | :-------: | ---------------------------------- |
-| **Regular**         |   41 patches    | 10 phases | `fw_patch` + `cfw_install`         |
-| **Development**     |   52 patches    | 12 phases | `fw_patch_dev` + `cfw_install_dev` |
-| **Jailbreak**       | 66 / 78 patches | 14 phases | `fw_patch_jb` + `cfw_install_jb`   |
+| Variant         |   Boot Chain    |    CFW    | Make Targets                                                 |
+| --------------- | :-------------: | :-------: | ------------------------------------------------------------ |
+| **Regular**     |   41 patches    | 10 phases | `fw_patch` + `cfw_install`                                   |
+| **Development** |   52 patches    | 12 phases | `fw_patch_dev` + `cfw_install_dev`                           |
+| **Jailbreak**   | 66 / 78 patches | 14 phases | `fw_patch_jb` + `cfw_install_jb` + `cfw_install_jb_finalize` |
 
-`66` = default JB kernel method plan; `78` = default + optional kernel methods (`VPHONE_JB_ENABLE_OPTIONAL=1`).
+> `cfw_install_jb_finalize` requires booting into the full system, not the ramdisk.
 
 See [research/0_binary_patch_comparison.md](./research/0_binary_patch_comparison.md) for the detailed per-component breakdown.
 

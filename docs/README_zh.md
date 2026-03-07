@@ -18,13 +18,13 @@
 
 提供三种补丁变体，安全绕过级别逐步递增：
 
-| 变体              |     启动链     | 自定义固件 | Make 目标                          |
-| ----------------- | :------------: | :--------: | ---------------------------------- |
-| **常规版**        |   41 个补丁    | 10 个阶段  | `fw_patch` + `cfw_install`         |
-| **开发版**        |   52 个补丁    | 12 个阶段  | `fw_patch_dev` + `cfw_install_dev` |
-| **越狱版**       | 66 / 78 个补丁 | 14 个阶段  | `fw_patch_jb` + `cfw_install_jb`   |
+| 变体       |     启动链     | 自定义固件 | Make 目标                                                    |
+| ---------- | :------------: | :--------: | ------------------------------------------------------------ |
+| **常规版** |   41 个补丁    | 10 个阶段  | `fw_patch` + `cfw_install`                                   |
+| **开发版** |   52 个补丁    | 12 个阶段  | `fw_patch_dev` + `cfw_install_dev`                           |
+| **越狱版** | 66 / 78 个补丁 | 14 个阶段  | `fw_patch_jb` + `cfw_install_jb` + `cfw_install_jb_finalize` |
 
-`66` 表示 JB 默认内核补丁计划；`78` 表示默认 + 可选内核补丁（`VPHONE_JB_ENABLE_OPTIONAL=1`）。
+> `cfw_install_jb_finalize` 需要启动到完整系统，而非 ramdisk。
 
 详见 [research/0_binary_patch_comparison.md](../research/0_binary_patch_comparison.md) 了解各组件的详细分项对比。
 
