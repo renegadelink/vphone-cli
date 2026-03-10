@@ -9,6 +9,7 @@
 #import "vphoned_apps.h"
 #import "vphoned_protocol.h"
 #include <dlfcn.h>
+#include <mach/mach.h>
 #include <objc/message.h>
 #include <signal.h>
 #include <unistd.h>
@@ -34,6 +35,10 @@
 static Class gFBSSystemServiceClass = Nil;
 // SBSCopyFrontmostApplicationDisplayIdentifier loaded via dlsym
 static NSString *(*pSBSCopyFrontmost)(void) = NULL;
+// Low-level MIG variants
+static mach_port_t (*pSBSSpringBoardServerPort)(void) = NULL;
+static void (*pSBFrontmostApplicationDisplayIdentifier)(mach_port_t port,
+                                                        char *result) = NULL;
 
 static BOOL gAppsLoaded = NO;
 
@@ -61,6 +66,9 @@ BOOL vp_apps_load(void) {
     if (!pSBSCopyFrontmost) {
       NSLog(@"vphoned: SBSCopyFrontmostApplicationDisplayIdentifier not found");
     }
+    pSBSSpringBoardServerPort = dlsym(sbs, "SBSSpringBoardServerPort");
+    pSBFrontmostApplicationDisplayIdentifier =
+        dlsym(sbs, "SBFrontmostApplicationDisplayIdentifier");
   } else {
     NSLog(@"vphoned: dlopen SpringBoardServices failed: %s", dlerror());
   }
@@ -231,8 +239,59 @@ NSDictionary *vp_handle_apps_command(NSDictionary *msg) {
     pid_t pid = 0;
     NSString *name = @"";
 
+    // SBS functions talk to SpringBoard via mach IPC. When running as root,
+    // the bootstrap port resolves in the system domain, which cannot see
+    // SpringBoard's per-user mach service. Temporarily drop to mobile (501)
+    // so the port lookup hits the user-session namespace.
+    uid_t orig_euid = geteuid();
+    BOOL switched = NO;
+    if (orig_euid == 0) {
+      if (seteuid(501) == 0) {
+        switched = YES;
+      }
+    }
+
+    // Method 1: High-level SBSCopyFrontmostApplicationDisplayIdentifier
     if (pSBSCopyFrontmost) {
       frontApp = pSBSCopyFrontmost();
+    }
+
+    // Method 2: Low-level SBFrontmostApplicationDisplayIdentifier(port, buf)
+    if ((!frontApp || frontApp.length == 0) && pSBSSpringBoardServerPort &&
+        pSBFrontmostApplicationDisplayIdentifier) {
+      mach_port_t port = pSBSSpringBoardServerPort();
+      if (port != MACH_PORT_NULL) {
+        char buf[256] = {0};
+        pSBFrontmostApplicationDisplayIdentifier(port, buf);
+        if (buf[0] != '\0') {
+          frontApp = [NSString stringWithUTF8String:buf];
+        }
+      }
+    }
+
+    if (switched) {
+      seteuid(orig_euid);
+    }
+
+    // Method 3: Walk running apps, pick the one with highest PID (most
+    // recently launched) that isn't SpringBoard — rough heuristic fallback
+    if ((!frontApp || frontApp.length == 0) && gFBSSystemServiceClass) {
+      LSApplicationWorkspace *ws = [LSApplicationWorkspace defaultWorkspace];
+      pid_t bestPid = 0;
+      NSString *bestApp = nil;
+      for (LSApplicationProxy *proxy in [ws allInstalledApplications]) {
+        pid_t p = pid_for_app(proxy.bundleIdentifier);
+        if (p > 0 &&
+            ![proxy.bundleIdentifier isEqualToString:@"com.apple.springboard"])
+        {
+          if (p > bestPid) {
+            bestPid = p;
+            bestApp = proxy.bundleIdentifier;
+          }
+        }
+      }
+      if (bestApp)
+        frontApp = bestApp;
     }
 
     if (!frontApp || frontApp.length == 0) {
