@@ -5,83 +5,78 @@ import Foundation
 
 @MainActor
 class VPhoneMenuController {
-  let keyHelper: VPhoneKeyHelper
-  let control: VPhoneControl
-  weak var vm: VPhoneVirtualMachine?
+    let keyHelper: VPhoneKeyHelper
+    let control: VPhoneControl
+    weak var vm: VPhoneVirtualMachine?
 
-  var onFilesPressed: (() -> Void)?
-  var onKeychainPressed: (() -> Void)?
-  var connectFileBrowserItem: NSMenuItem?
-  var connectKeychainBrowserItem: NSMenuItem?
-  var connectDevModeStatusItem: NSMenuItem?
-  var connectPingItem: NSMenuItem?
-  var connectGuestVersionItem: NSMenuItem?
-  var installPackageItem: NSMenuItem?
-  var clipboardGetItem: NSMenuItem?
-  var clipboardSetItem: NSMenuItem?
-  var appsListItem: NSMenuItem?
-  var appsRunningItem: NSMenuItem?
-  var appsForegroundItem: NSMenuItem?
-  var appsLaunchItem: NSMenuItem?
-  var appsTerminateItem: NSMenuItem?
-  var appsOpenURLItem: NSMenuItem?
-  var settingsGetItem: NSMenuItem?
-  var settingsSetItem: NSMenuItem?
-  var locationProvider: VPhoneLocationProvider?
-  var locationMenuItem: NSMenuItem?
-  var locationPresetMenuItem: NSMenuItem?
-  var locationReplayStartItem: NSMenuItem?
-  var locationReplayStopItem: NSMenuItem?
-  var screenRecorder: VPhoneScreenRecorder?
-  var recordingItem: NSMenuItem?
-  weak var captureView: VPhoneVirtualMachineView?
+    var onFilesPressed: (() -> Void)?
+    var onKeychainPressed: (() -> Void)?
+    var connectFileBrowserItem: NSMenuItem?
+    var connectKeychainBrowserItem: NSMenuItem?
+    var connectDevModeStatusItem: NSMenuItem?
+    var connectPingItem: NSMenuItem?
+    var connectGuestVersionItem: NSMenuItem?
+    var installPackageItem: NSMenuItem?
+    var clipboardGetItem: NSMenuItem?
+    var clipboardSetItem: NSMenuItem?
+    var appsListItem: NSMenuItem?
+    var appsRunningItem: NSMenuItem?
+    var appsForegroundItem: NSMenuItem?
+    var appsLaunchItem: NSMenuItem?
+    var appsTerminateItem: NSMenuItem?
+    var appsOpenURLItem: NSMenuItem?
+    var settingsGetItem: NSMenuItem?
+    var settingsSetItem: NSMenuItem?
+    var locationProvider: VPhoneLocationProvider?
+    var locationMenuItem: NSMenuItem?
+    var locationPresetMenuItem: NSMenuItem?
+    var locationReplayStartItem: NSMenuItem?
+    var locationReplayStopItem: NSMenuItem?
+    var screenRecorder: VPhoneScreenRecorder?
+    var recordingItem: NSMenuItem?
+    weak var captureView: VPhoneVirtualMachineView?
 
-  init(keyHelper: VPhoneKeyHelper, control: VPhoneControl) {
-    self.keyHelper = keyHelper
-    self.control = control
-    setupMenuBar()
-  }
+    init(keyHelper: VPhoneKeyHelper, control: VPhoneControl) {
+        self.keyHelper = keyHelper
+        self.control = control
+        setupMenuBar()
+    }
 
-  // MARK: - Menu Bar Setup
+    // MARK: - Menu Bar Setup
 
-  private func setupMenuBar() {
-    let mainMenu = NSMenu()
+    private func setupMenuBar() {
+        let mainMenu = NSMenu()
 
-    // App menu
-    let appMenuItem = NSMenuItem()
-    let appMenu = NSMenu(title: "vphone")
-    #if canImport(VPhoneBuildInfo)
-      let buildItem = NSMenuItem(
-        title: "Build: \(VPhoneBuildInfo.commitHash)", action: nil, keyEquivalent: "")
-    #else
-      let buildItem = NSMenuItem(title: "Build: unknown", action: nil, keyEquivalent: "")
-    #endif
-    buildItem.isEnabled = false
-    appMenu.addItem(buildItem)
-    appMenu.addItem(NSMenuItem.separator())
-    appMenu.addItem(
-      withTitle: "Quit vphone", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"
-    )
-    appMenuItem.submenu = appMenu
-    mainMenu.addItem(appMenuItem)
+        // App menu
+        let appMenuItem = NSMenuItem()
+        let appMenu = NSMenu(title: "vphone")
+        #if canImport(VPhoneBuildInfo)
+            let buildItem = NSMenuItem(
+                title: "Build: \(VPhoneBuildInfo.commitHash)", action: nil, keyEquivalent: ""
+            )
+        #else
+            let buildItem = NSMenuItem(title: "Build: unknown", action: nil, keyEquivalent: "")
+        #endif
+        buildItem.isEnabled = false
+        appMenu.addItem(buildItem)
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(
+            withTitle: "Quit vphone", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"
+        )
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
 
-    mainMenu.addItem(buildKeysMenu())
-    mainMenu.addItem(buildTypeMenu())
-    mainMenu.addItem(buildConnectMenu())
-    mainMenu.addItem(buildAppsMenu())
-    mainMenu.addItem(buildClipboardMenu())
-    mainMenu.addItem(buildInstallMenu())
-    mainMenu.addItem(buildSettingsMenu())
-    mainMenu.addItem(buildLocationMenu())
-    mainMenu.addItem(buildRecordMenu())
-    mainMenu.addItem(buildBatteryMenu())
+        mainMenu.addItem(buildConnectMenu())
+        mainMenu.addItem(buildKeysMenu())
+        mainMenu.addItem(buildAppsMenu())
+        mainMenu.addItem(buildRecordMenu())
 
-    NSApp.mainMenu = mainMenu
-  }
+        NSApp.mainMenu = mainMenu
+    }
 
-  func makeItem(_ title: String, action: Selector) -> NSMenuItem {
-    let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
-    item.target = self
-    return item
-  }
+    func makeItem(_ title: String, action: Selector) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self
+        return item
+    }
 }

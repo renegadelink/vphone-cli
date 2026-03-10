@@ -175,22 +175,12 @@ vm_new:
 
 boot: bundle vphoned
 	cd $(VM_DIR) && "$(CURDIR)/$(BUNDLE_BIN)" \
-		--config ./config.plist \
-		--rom ./AVPBooter.vresearch1.bin \
-		--disk ./Disk.img \
-		--nvram ./nvram.bin \
-		--sep-rom ./AVPSEPBooter.vresearch1.bin \
-		--sep-storage ./SEPStorage
+		--config ./config.plist
 
 boot_dfu: build
 	cd $(VM_DIR) && "$(CURDIR)/$(BINARY)" \
 		--config ./config.plist \
-		--rom ./AVPBooter.vresearch1.bin \
-		--disk ./Disk.img \
-		--nvram ./nvram.bin \
-		--sep-rom ./AVPSEPBooter.vresearch1.bin \
-		--sep-storage ./SEPStorage \
-		--no-graphics --dfu
+		--dfu
 
 # ═══════════════════════════════════════════════════════════════════
 # Firmware pipeline

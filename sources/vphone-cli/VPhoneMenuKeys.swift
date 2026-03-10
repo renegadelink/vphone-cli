@@ -12,6 +12,8 @@ extension VPhoneMenuController {
         menu.addItem(makeItem("Volume Down", action: #selector(sendVolumeDown)))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(makeItem("Spotlight (Cmd+Space)", action: #selector(sendSpotlight)))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(makeItem("Type ASCII from Clipboard", action: #selector(typeFromClipboard)))
         item.submenu = menu
         return item
     }
@@ -34,5 +36,9 @@ extension VPhoneMenuController {
 
     @objc func sendSpotlight() {
         keyHelper.sendSpotlight()
+    }
+
+    @objc func typeFromClipboard() {
+        keyHelper.typeFromClipboard()
     }
 }

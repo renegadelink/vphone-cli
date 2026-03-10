@@ -49,7 +49,7 @@ private let locationReplayPoints: [VPhoneLocationProvider.ReplayPoint] = [
 // MARK: - Location Menu
 
 extension VPhoneMenuController {
-    func buildLocationMenu() -> NSMenuItem {
+    func buildLocationSubmenu() -> NSMenuItem {
         let item = NSMenuItem()
         let menu = NSMenu(title: "Location")
 

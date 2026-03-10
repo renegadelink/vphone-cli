@@ -3,7 +3,7 @@ import AppKit
 // MARK: - Battery Menu
 
 extension VPhoneMenuController {
-    func buildBatteryMenu() -> NSMenuItem {
+    func buildBatterySubmenu() -> NSMenuItem {
         let item = NSMenuItem()
         let menu = NSMenu(title: "Battery")
 
