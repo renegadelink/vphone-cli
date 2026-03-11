@@ -18,6 +18,23 @@ struct VPhoneCommandResult: Sendable {
     }
 }
 
+struct VPhoneDataCommandResult: Sendable {
+    let terminationStatus: TerminationStatus
+    let standardOutput: Data
+    let standardError: String
+
+    var combinedOutput: String {
+        if standardError.isEmpty {
+            return String(decoding: standardOutput, as: UTF8.self)
+        }
+        let stdout = String(decoding: standardOutput, as: UTF8.self)
+        if stdout.isEmpty {
+            return standardError
+        }
+        return "\(stdout)\n\(standardError)"
+    }
+}
+
 enum VPhoneHostError: Error, CustomStringConvertible {
     case missingFile(String)
     case invalidArgument(String)
@@ -105,6 +122,38 @@ enum VPhoneHost {
         if requireSuccess, !commandResult.terminationStatus.isSuccess {
             throw VPhoneHostError.commandFailed(
                 executable: "sudo \(executable)",
+                arguments: arguments,
+                status: commandResult.terminationStatus,
+                output: commandResult.combinedOutput
+            )
+        }
+        return commandResult
+    }
+
+    static func runCommandData(
+        _ executable: String,
+        arguments: [String] = [],
+        environment: [String: String?] = [:],
+        requireSuccess: Bool = false
+    ) async throws -> VPhoneDataCommandResult {
+        let environmentOverrides = Dictionary(uniqueKeysWithValues: environment.map {
+            (Environment.Key(stringLiteral: $0.key), $0.value)
+        })
+        let result = try await run(
+            executableReference(for: executable),
+            arguments: Arguments(arguments),
+            environment: environment.isEmpty ? .inherit : .inherit.updating(environmentOverrides),
+            output: .data(limit: 64 * 1024 * 1024),
+            error: .string(limit: 4 * 1024 * 1024)
+        )
+        let commandResult = VPhoneDataCommandResult(
+            terminationStatus: result.terminationStatus,
+            standardOutput: result.standardOutput,
+            standardError: (result.standardError ?? "").trimmingCharacters(in: CharacterSet.newlines)
+        )
+        if requireSuccess, !commandResult.terminationStatus.isSuccess {
+            throw VPhoneHostError.commandFailed(
+                executable: executable,
                 arguments: arguments,
                 status: commandResult.terminationStatus,
                 output: commandResult.combinedOutput

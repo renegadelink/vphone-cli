@@ -92,7 +92,6 @@ scripts/
 │   └── cfw.py                    #   CFW binary patcher entrypoint
 ├── resources/                    # Resource archives (git submodule)
 ├── patches/                      # Build-time patches (libirecovery)
-├── ramdisk_build.py              # Build SSH ramdisk with trustcache (reuses Swift patch-component for TXM/base kernel)
 ├── cfw_install.sh                # Install CFW (regular)
 ├── cfw_install_dev.sh            # Regular + rpcserver daemon
 ├── cfw_install_jb.sh             # Regular + jetsam fix + procursus
@@ -103,7 +102,7 @@ scripts/
 ├── setup_libimobiledevice.sh     # Build libimobiledevice from source
 └── tail_jb_patch_logs.sh         # Tail JB patch log output
 
-Host-side automation entrypoints that previously lived in shell/Python are being migrated into `sources/vphone-cli/` subcommands such as `vm-create`, `generate-vm-manifest`, `prepare-firmware`, `send-ramdisk`, `boot-host-preflight`, and `start-amfidont`.
+Host-side automation entrypoints that previously lived in shell/Python are being migrated into `sources/vphone-cli/` subcommands such as `vm-create`, `generate-vm-manifest`, `prepare-firmware`, `build-ramdisk`, `send-ramdisk`, `boot-host-preflight`, and `start-amfidont`.
 
 research/                         # Detailed firmware/patch documentation
 ```

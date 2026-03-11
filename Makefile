@@ -279,7 +279,7 @@ restore:
 .PHONY: ramdisk_build ramdisk_send
 
 ramdisk_build: patcher_build
-	cd $(VM_DIR) && RAMDISK_UDID="$(RAMDISK_UDID)" $(PYTHON) "$(CURDIR)/$(SCRIPTS)/ramdisk_build.py" .
+	cd $(VM_DIR) && RAMDISK_UDID="$(RAMDISK_UDID)" "$(CURDIR)/$(PATCHER_BINARY)" build-ramdisk .
 
 ramdisk_send:
 	cd $(VM_DIR) && \

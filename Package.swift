@@ -32,6 +32,7 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "Dynamic", package: "Dynamic"),
                 .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "Img4tool", package: "libimg4-spm"),
                 "FirmwarePatcher",
             ],
             path: "sources/vphone-cli",

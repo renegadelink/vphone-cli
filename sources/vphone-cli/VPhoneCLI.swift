@@ -14,6 +14,7 @@ struct VPhoneCLI: ParsableCommand {
             GenerateVMManifestCLI.self,
             GenerateFirmwareManifestCLI.self,
             PrepareFirmwareCLI.self,
+            BuildRamdiskCLI.self,
             SendRamdiskCLI.self,
             BootHostPreflightCLI.self,
             StartAmfidontCLI.self,
