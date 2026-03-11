@@ -39,6 +39,9 @@ struct VPhoneMain {
             case var command as PrepareFirmwareCLI:
                 try await command.run()
 
+            case var command as SendRamdiskCLI:
+                try await command.run()
+
             default:
                 break
             }

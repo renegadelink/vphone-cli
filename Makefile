@@ -282,8 +282,12 @@ ramdisk_build: patcher_build
 	cd $(VM_DIR) && RAMDISK_UDID="$(RAMDISK_UDID)" $(PYTHON) "$(CURDIR)/$(SCRIPTS)/ramdisk_build.py" .
 
 ramdisk_send:
-	cd $(VM_DIR) && IRECOVERY="$(CURDIR)/$(IRECOVERY)" IRECOVERY_ECID="$(IRECOVERY_ECID)" RAMDISK_UDID="$(RAMDISK_UDID)" RESTORE_UDID="$(RESTORE_UDID)" \
-		zsh "$(CURDIR)/$(SCRIPTS)/ramdisk_send.sh"
+	cd $(VM_DIR) && \
+		IRECOVERY="$(CURDIR)/$(IRECOVERY)" \
+		IRECOVERY_ECID="$(IRECOVERY_ECID)" \
+		RAMDISK_UDID="$(RAMDISK_UDID)" \
+		RESTORE_UDID="$(RESTORE_UDID)" \
+		"$(CURDIR)/$(PATCHER_BINARY)" send-ramdisk
 
 # ═══════════════════════════════════════════════════════════════════
 # CFW
