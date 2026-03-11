@@ -16,3 +16,6 @@
 [submodule "vendor/swift-argument-parser"]
 	path = vendor/swift-argument-parser
 	url = https://github.com/apple/swift-argument-parser.git
+[submodule "vendor/swift-subprocess"]
+	path = vendor/swift-subprocess
+	url = https://github.com/swiftlang/swift-subprocess

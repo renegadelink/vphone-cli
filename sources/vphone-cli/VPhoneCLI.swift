@@ -6,7 +6,16 @@ struct VPhoneCLI: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "vphone-cli",
         abstract: "Boot a virtual iPhone or patch firmware with the Swift pipeline",
-        subcommands: [VPhoneBootCLI.self, PatchFirmwareCLI.self, PatchComponentCLI.self],
+        subcommands: [
+            VPhoneBootCLI.self,
+            PatchFirmwareCLI.self,
+            PatchComponentCLI.self,
+            VMCreateCLI.self,
+            GenerateVMManifestCLI.self,
+            GenerateFirmwareManifestCLI.self,
+            BootHostPreflightCLI.self,
+            StartAmfidontCLI.self,
+        ],
         defaultSubcommand: VPhoneBootCLI.self
     )
 }

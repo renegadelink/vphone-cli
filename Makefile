@@ -23,6 +23,7 @@ BUNDLE      := .build/vphone-cli.app
 BUNDLE_BIN  := $(BUNDLE)/Contents/MacOS/vphone-cli
 INFO_PLIST  := sources/Info.plist
 ENTITLEMENTS := sources/vphone.entitlements
+VM_DIR_ABS  := $(abspath $(VM_DIR))
 VENV        := .venv
 LIMD_PREFIX := .limd
 TOOLS_PREFIX := .tools
@@ -185,18 +186,21 @@ vphoned:
 
 .PHONY: vm_new amfidont_allow_vphone boot_host_preflight boot boot_dfu boot_binary_check
 
-vm_new:
-	CPU="$(CPU)" MEMORY="$(MEMORY)" \
-	zsh $(SCRIPTS)/vm_create.sh --dir $(VM_DIR) --disk-size $(DISK_SIZE)
+vm_new: patcher_build
+	"$(CURDIR)/$(PATCHER_BINARY)" vm-create \
+		--dir "$(VM_DIR_ABS)" \
+		--disk-size "$(DISK_SIZE)" \
+		--cpu "$(CPU)" \
+		--memory "$(MEMORY)"
 
-amfidont_allow_vphone: build
-	zsh $(SCRIPTS)/start_amfidont_for_vphone.sh
+amfidont_allow_vphone: build patcher_build
+	"$(CURDIR)/$(PATCHER_BINARY)" start-amfidont --project-root "$(CURDIR)"
 
-boot_host_preflight: build
-	zsh $(SCRIPTS)/boot_host_preflight.sh
+boot_host_preflight: build patcher_build
+	"$(CURDIR)/$(PATCHER_BINARY)" boot-host-preflight --project-root "$(CURDIR)"
 
-boot_binary_check: $(BINARY)
-	@zsh $(SCRIPTS)/boot_host_preflight.sh --assert-bootable
+boot_binary_check: $(BINARY) patcher_build
+	@"$(CURDIR)/$(PATCHER_BINARY)" boot-host-preflight --project-root "$(CURDIR)" --assert-bootable
 	@tmp_log="$$(mktemp -t vphone-boot-preflight.XXXXXX)"; \
 	set +e; \
 	"$(CURDIR)/$(BINARY)" --help >"$$tmp_log" 2>&1; \
@@ -234,13 +238,13 @@ fw_prepare:
 	cd $(VM_DIR) && bash "$(CURDIR)/$(SCRIPTS)/fw_prepare.sh"
 
 fw_patch: patcher_build
-	"$(CURDIR)/$(PATCHER_BINARY)" patch-firmware --vm-directory "$(CURDIR)/$(VM_DIR)" --variant regular
+	"$(CURDIR)/$(PATCHER_BINARY)" patch-firmware --vm-directory "$(VM_DIR_ABS)" --variant regular
 
 fw_patch_dev: patcher_build
-	"$(CURDIR)/$(PATCHER_BINARY)" patch-firmware --vm-directory "$(CURDIR)/$(VM_DIR)" --variant dev
+	"$(CURDIR)/$(PATCHER_BINARY)" patch-firmware --vm-directory "$(VM_DIR_ABS)" --variant dev
 
 fw_patch_jb: patcher_build
-	"$(CURDIR)/$(PATCHER_BINARY)" patch-firmware --vm-directory "$(CURDIR)/$(VM_DIR)" --variant jb
+	"$(CURDIR)/$(PATCHER_BINARY)" patch-firmware --vm-directory "$(VM_DIR_ABS)" --variant jb
 
 # ═══════════════════════════════════════════════════════════════════
 # Restore
