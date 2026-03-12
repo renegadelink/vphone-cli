@@ -24,21 +24,15 @@ CFW_SKIP_HALT="${CFW_SKIP_HALT:-0}"
 # Resolve absolute paths
 VM_DIR="$(cd "$VM_DIR" && pwd)"
 
-# ── Python resolver — prefer project venv over whatever is in PATH ─
-# Resolves to .venv/bin/python3 relative to the project root (parent of
-# scripts/), falling back to the system python3 when the venv is absent.
-# Every python3 invocation in this script uses $PYTHON3 so that running
-# `make cfw_install` standalone (without setup_machine.sh exporting PATH)
-# still uses the correctly set-up venv interpreter.
-_resolve_python3() {
-    local venv_py="${SCRIPT_DIR:h}/.venv/bin/python3"
-    if [[ -x "$venv_py" ]]; then
-        echo "$venv_py"
-    else
-        command -v python3 || true
+_resolve_patcher_binary() {
+    local candidate="${SCRIPT_DIR:h}/.build/debug/vphone-cli"
+    if [[ -x "$candidate" ]]; then
+        echo "$candidate"
+        return
     fi
+    command -v vphone-cli || true
 }
-PYTHON3="$(_resolve_python3)"
+PATCHER_BIN="$(_resolve_patcher_binary)"
 
 # ── Configuration ───────────────────────────────────────────────
 CFW_INPUT="cfw_input"
@@ -207,12 +201,7 @@ setup_cfw_input() {
 check_prereqs() {
     command -v ipsw >/dev/null 2>&1 || die "'ipsw' not found. Install: brew install blacktop/tap/ipsw"
     command -v aea >/dev/null 2>&1 || die "'aea' not found (requires macOS 12+)"
-    [[ -x "$PYTHON3" ]] || die "python3 not found (tried: $PYTHON3). Run: make setup_venv"
-    echo "[*] Python: $PYTHON3 ($("$PYTHON3" --version 2>&1))"
-    local py_err
-    py_err="$("$PYTHON3" -c "import capstone, keystone" 2>&1)" || {
-        die "Missing Python deps (using $PYTHON3).\n  Error: ${py_err}\n  Fix:   source ${SCRIPT_DIR:h}/.venv/bin/activate && pip install capstone keystone-engine\n  Or:    make setup_venv"
-    }
+    [[ -x "$PATCHER_BIN" ]] || die "vphone-cli patcher not found (tried: $PATCHER_BIN). Run: make patcher_build"
 }
 
 # ── Cleanup trap (unmount DMGs on error) ───────────────────────
@@ -243,7 +232,7 @@ mkdir -p "$TEMP_DIR"
 # ── Parse Cryptex paths from BuildManifest ─────────────────────
 echo ""
 echo "[*] Parsing iPhone BuildManifest for Cryptex paths..."
-CRYPTEX_PATHS=$("$PYTHON3" "$SCRIPT_DIR/patchers/cfw.py" cryptex-paths "$RESTORE_DIR/BuildManifest-iPhone.plist")
+CRYPTEX_PATHS=$("$PATCHER_BIN" cfw-cryptex-paths "$RESTORE_DIR/BuildManifest-iPhone.plist")
 CRYPTEX_SYSOS=$(echo "$CRYPTEX_PATHS" | head -1)
 CRYPTEX_APPOS=$(echo "$CRYPTEX_PATHS" | tail -1)
 echo "  SystemOS: $CRYPTEX_SYSOS"
@@ -365,7 +354,7 @@ if ! remote_file_exists "/mnt1/usr/libexec/seputil.bak"; then
 fi
 
 scp_from "/mnt1/usr/libexec/seputil.bak" "$TEMP_DIR/seputil"
-"$PYTHON3" "$SCRIPT_DIR/patchers/cfw.py" patch-seputil "$TEMP_DIR/seputil"
+"$PATCHER_BIN" cfw-patch-seputil "$TEMP_DIR/seputil"
 ldid_sign "$TEMP_DIR/seputil" "com.apple.seputil"
 scp_to "$TEMP_DIR/seputil" "/mnt1/usr/libexec/seputil"
 ssh_cmd "/bin/chmod 0755 /mnt1/usr/libexec/seputil"
@@ -421,7 +410,7 @@ if ! remote_file_exists "/mnt1/usr/libexec/launchd_cache_loader.bak"; then
 fi
 
 scp_from "/mnt1/usr/libexec/launchd_cache_loader.bak" "$TEMP_DIR/launchd_cache_loader"
-"$PYTHON3" "$SCRIPT_DIR/patchers/cfw.py" patch-launchd-cache-loader "$TEMP_DIR/launchd_cache_loader"
+"$PATCHER_BIN" cfw-patch-launchd-cache-loader "$TEMP_DIR/launchd_cache_loader"
 ldid_sign "$TEMP_DIR/launchd_cache_loader" "com.apple.launchd_cache_loader"
 scp_to "$TEMP_DIR/launchd_cache_loader" "/mnt1/usr/libexec/launchd_cache_loader"
 ssh_cmd "/bin/chmod 0755 /mnt1/usr/libexec/launchd_cache_loader"
@@ -439,7 +428,7 @@ if ! remote_file_exists "/mnt1/usr/libexec/mobileactivationd.bak"; then
 fi
 
 scp_from "/mnt1/usr/libexec/mobileactivationd.bak" "$TEMP_DIR/mobileactivationd"
-"$PYTHON3" "$SCRIPT_DIR/patchers/cfw.py" patch-mobileactivationd "$TEMP_DIR/mobileactivationd"
+"$PATCHER_BIN" cfw-patch-mobileactivationd "$TEMP_DIR/mobileactivationd"
 ldid_sign "$TEMP_DIR/mobileactivationd"
 scp_to "$TEMP_DIR/mobileactivationd" "/mnt1/usr/libexec/mobileactivationd"
 ssh_cmd "/bin/chmod 0755 /mnt1/usr/libexec/mobileactivationd"
@@ -505,7 +494,7 @@ fi
 
 scp_from "/mnt1/System/Library/xpc/launchd.plist.bak" "$TEMP_DIR/launchd.plist"
 cp "$VPHONED_SRC/vphoned.plist" "$INPUT_DIR/jb/LaunchDaemons/"
-"$PYTHON3" "$SCRIPT_DIR/patchers/cfw.py" inject-daemons "$TEMP_DIR/launchd.plist" "$INPUT_DIR/jb/LaunchDaemons"
+"$PATCHER_BIN" cfw-inject-daemons "$TEMP_DIR/launchd.plist" "$INPUT_DIR/jb/LaunchDaemons"
 scp_to "$TEMP_DIR/launchd.plist" "/mnt1/System/Library/xpc/launchd.plist"
 ssh_cmd "/bin/chmod 0644 /mnt1/System/Library/xpc/launchd.plist"
 

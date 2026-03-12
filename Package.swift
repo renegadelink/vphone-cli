@@ -30,6 +30,7 @@ let package = Package(
             name: "vphone-cli",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "Capstone", package: "libcapstone-spm"),
                 .product(name: "Dynamic", package: "Dynamic"),
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "Img4tool", package: "libimg4-spm"),

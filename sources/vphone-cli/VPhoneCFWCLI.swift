@@ -59,6 +59,54 @@ struct CFWPatchSeputilCLI: ParsableCommand {
     }
 }
 
+struct CFWPatchLaunchdCacheLoaderCLI: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "cfw-patch-launchd-cache-loader",
+        abstract: "NOP the cache validation gate in launchd_cache_loader"
+    )
+
+    @Argument(help: "Path to launchd_cache_loader binary", transform: URL.init(fileURLWithPath:))
+    var binaryURL: URL
+
+    mutating func run() throws {
+        var patcher = try VPhoneCFWPatcher(binaryURL: binaryURL)
+        try patcher.patchLaunchdCacheLoader()
+        try patcher.writeBack()
+    }
+}
+
+struct CFWPatchMobileactivationdCLI: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "cfw-patch-mobileactivationd",
+        abstract: "Patch should_hactivate to always return YES"
+    )
+
+    @Argument(help: "Path to mobileactivationd binary", transform: URL.init(fileURLWithPath:))
+    var binaryURL: URL
+
+    mutating func run() throws {
+        var patcher = try VPhoneCFWPatcher(binaryURL: binaryURL)
+        try patcher.patchMobileactivationd()
+        try patcher.writeBack()
+    }
+}
+
+struct CFWPatchLaunchdJetsamCLI: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "cfw-patch-launchd-jetsam",
+        abstract: "Rewrite the launchd jetsam panic guard to unconditional success"
+    )
+
+    @Argument(help: "Path to launchd binary", transform: URL.init(fileURLWithPath:))
+    var binaryURL: URL
+
+    mutating func run() throws {
+        var patcher = try VPhoneCFWPatcher(binaryURL: binaryURL)
+        try patcher.patchLaunchdJetsam()
+        try patcher.writeBack()
+    }
+}
+
 struct CFWInjectDaemonsCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "cfw-inject-daemons",
@@ -99,6 +147,44 @@ struct CFWInjectDaemonsCLI: AsyncParsableCommand {
         target["LaunchDaemons"] = launchDaemons
         let output = try PropertyListSerialization.data(fromPropertyList: target, format: .xml, options: 0)
         try output.write(to: plistURL)
+    }
+}
+
+struct CFWInjectLaunchDaemonCLI: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "cfw-inject-launchdaemon",
+        abstract: "Inject a single launch daemon plist into launchd.plist"
+    )
+
+    @Argument(help: "Path to launchd.plist", transform: URL.init(fileURLWithPath:))
+    var plistURL: URL
+
+    @Argument(help: "Path to daemon plist", transform: URL.init(fileURLWithPath:))
+    var daemonPlistURL: URL
+
+    @Argument(help: "LaunchDaemons dictionary key, for example /System/Library/LaunchDaemons/com.example.plist")
+    var daemonKey: String
+
+    mutating func run() throws {
+        var target = try PropertyListSerialization.propertyList(
+            from: Data(contentsOf: plistURL),
+            options: [],
+            format: nil
+        ) as? [String: Any] ?? [:]
+
+        let daemon = try PropertyListSerialization.propertyList(
+            from: Data(contentsOf: daemonPlistURL),
+            options: [],
+            format: nil
+        )
+
+        var launchDaemons = target["LaunchDaemons"] as? [String: Any] ?? [:]
+        launchDaemons[daemonKey] = daemon
+        target["LaunchDaemons"] = launchDaemons
+
+        let output = try PropertyListSerialization.data(fromPropertyList: target, format: .xml, options: 0)
+        try output.write(to: plistURL)
+        print("  [+] Injected \(daemonKey)")
     }
 }
 

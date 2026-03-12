@@ -295,11 +295,11 @@ ramdisk_send:
 
 .PHONY: cfw_install cfw_install_dev cfw_install_jb
 
-cfw_install:
+cfw_install: patcher_build
 	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") zsh "$(CURDIR)/$(SCRIPTS)/cfw_install.sh" .
 
-cfw_install_dev:
+cfw_install_dev: patcher_build
 	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") zsh "$(CURDIR)/$(SCRIPTS)/cfw_install_dev.sh" .
 
-cfw_install_jb:
+cfw_install_jb: patcher_build
 	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") zsh "$(CURDIR)/$(SCRIPTS)/cfw_install_jb.sh" .

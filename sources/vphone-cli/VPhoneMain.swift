@@ -51,8 +51,20 @@ struct VPhoneMain {
             case var command as CFWPatchSeputilCLI:
                 try command.run()
 
+            case var command as CFWPatchLaunchdCacheLoaderCLI:
+                try command.run()
+
+            case var command as CFWPatchMobileactivationdCLI:
+                try command.run()
+
+            case var command as CFWPatchLaunchdJetsamCLI:
+                try command.run()
+
             case var command as CFWInjectDaemonsCLI:
                 try await command.run()
+
+            case var command as CFWInjectLaunchDaemonCLI:
+                try command.run()
 
             case var command as CFWInjectDylibCLI:
                 try await command.run()

@@ -15,18 +15,15 @@ set -euo pipefail
 VM_DIR="${1:-.}"
 SCRIPT_DIR="${0:a:h}"
 
-# ── Python resolver — prefer project venv over whatever is in PATH ─
-# Resolves to .venv/bin/python3 relative to the project root (parent of
-# scripts/), falling back to the system python3 when the venv is absent.
-_resolve_python3() {
-    local venv_py="${SCRIPT_DIR:h}/.venv/bin/python3"
-    if [[ -x "$venv_py" ]]; then
-        echo "$venv_py"
-    else
-        command -v python3 || true
+_resolve_patcher_binary() {
+    local candidate="${SCRIPT_DIR:h}/.build/debug/vphone-cli"
+    if [[ -x "$candidate" ]]; then
+        echo "$candidate"
+        return
     fi
+    command -v vphone-cli || true
 }
-PYTHON3="$(_resolve_python3)"
+PATCHER_BIN="$(_resolve_patcher_binary)"
 
 # ════════════════════════════════════════════════════════════════
 # Step 1: Run base CFW install (skip halt — we continue with JB phases)
@@ -238,10 +235,10 @@ fi
 # LC_LOAD_DYLIB command after stripping LC_CODE_SIGNATURE.
 if [[ -d "$JB_INPUT_DIR/basebin" ]]; then
     echo "  Injecting LC_LOAD_DYLIB for /b (short launchdhook alias)..."
-    "$PYTHON3" "$SCRIPT_DIR/patchers/cfw.py" inject-dylib "$TEMP_DIR/launchd" "/b"
+    "$PATCHER_BIN" cfw-inject-dylib "$TEMP_DIR/launchd" "/b"
 fi
 
-"$PYTHON3" "$SCRIPT_DIR/patchers/cfw.py" patch-launchd-jetsam "$TEMP_DIR/launchd"
+"$PATCHER_BIN" cfw-patch-launchd-jetsam "$TEMP_DIR/launchd"
 
 # Re-sign with original entitlements to avoid "operation not permitted" on spawn
 if [[ -s "$TEMP_DIR/launchd.entitlements" ]]; then
@@ -388,16 +385,10 @@ if [[ -f "$SETUP_PLIST" ]]; then
     # Inject into launchd.plist so launchd starts it at boot
     echo "  Injecting com.vphone.jb-setup into launchd.plist..."
     scp_from "/mnt1/System/Library/xpc/launchd.plist" "$TEMP_DIR/launchd.plist"
-    "$PYTHON3" -c "
-import plistlib, sys
-with open(sys.argv[1], 'rb') as f:
-    target = plistlib.load(f)
-with open(sys.argv[2], 'rb') as f:
-    daemon = plistlib.load(f)
-target.setdefault('LaunchDaemons', {})['/System/Library/LaunchDaemons/com.vphone.jb-setup.plist'] = daemon
-with open(sys.argv[1], 'wb') as f:
-    plistlib.dump(target, f, sort_keys=False)
-" "$TEMP_DIR/launchd.plist" "$SETUP_PLIST"
+    "$PATCHER_BIN" cfw-inject-launchdaemon \
+        "$TEMP_DIR/launchd.plist" \
+        "$SETUP_PLIST" \
+        "/System/Library/LaunchDaemons/com.vphone.jb-setup.plist"
     scp_to "$TEMP_DIR/launchd.plist" "/mnt1/System/Library/xpc/launchd.plist"
     ssh_cmd "/bin/chmod 0644 /mnt1/System/Library/xpc/launchd.plist"
     echo "  [+] com.vphone.jb-setup.plist injected into launchd.plist"
