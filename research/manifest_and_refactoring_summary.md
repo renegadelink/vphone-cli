@@ -215,7 +215,7 @@
 | `DISK_SIZE`      | Disk size (GB)    | Only `vm_new`        |
 | `RESTORE_UDID`   | Device UDID       | `restore` operations |
 | `RESTORE_ECID`   | Device ECID       | `restore` operations |
-| `IRECOVERY_ECID` | Device ECID       | `ramdisk_send`       |
+| `RAMDISK_ECID`   | Device ECID       | `ramdisk_send`       |
 
 ---
 
