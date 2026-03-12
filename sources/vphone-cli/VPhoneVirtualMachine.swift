@@ -328,7 +328,7 @@ class VPhoneVirtualMachine: NSObject, VZVirtualMachineDelegate {
         nonisolated(unsafe) let vm = virtualMachine
         try await vm.start(options: opts)
         if forceDFU {
-            print("[vphone] VM started in DFU mode - connect with irecovery")
+            print("[vphone] VM started in DFU mode - use make ramdisk_send or vphone-cli send-ramdisk")
         } else {
             print("[vphone] VM started - booting normally")
         }

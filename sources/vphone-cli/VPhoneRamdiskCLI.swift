@@ -10,7 +10,7 @@ struct SendRamdiskCLI: AsyncParsableCommand {
     @Option(name: .customLong("ramdisk-dir"), help: "Path to the Ramdisk directory.", transform: URL.init(fileURLWithPath:))
     var ramdiskDirectory: URL = URL(fileURLWithPath: "Ramdisk", isDirectory: true)
 
-    @Option(name: .customLong("irecovery"), help: "Recovery transport binary path or name.")
+    @Option(name: .customLong("irecovery"), help: "Legacy external recovery transport binary path or name.")
     var irecovery: String?
 
     @Option(name: .customLong("ecid"), help: "Optional ECID selector.")
