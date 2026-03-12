@@ -19,3 +19,9 @@
 [submodule "vendor/swift-subprocess"]
 	path = vendor/swift-subprocess
 	url = https://github.com/swiftlang/swift-subprocess
+[submodule "vendor/swift-trustcache"]
+	path = vendor/swift-trustcache
+	url = https://github.com/Lakr233/swift-trustcache
+[submodule "vendor/inject"]
+	path = vendor/inject
+	url = https://github.com/paradiseduo/inject

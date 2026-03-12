@@ -17,6 +17,7 @@ struct VPhoneCLI: ParsableCommand {
             BuildRamdiskCLI.self,
             SendRamdiskCLI.self,
             SetupToolsCLI.self,
+            CFWInstallCLI.self,
             BootHostPreflightCLI.self,
             StartAmfidontCLI.self,
             CFWCryptexPathsCLI.self,

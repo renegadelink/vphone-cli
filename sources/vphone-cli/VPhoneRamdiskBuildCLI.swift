@@ -2,6 +2,7 @@ import ArgumentParser
 import FirmwarePatcher
 import Foundation
 import Img4tool
+import TrustCache
 
 struct BuildRamdiskCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -151,9 +152,7 @@ private extension BuildRamdiskCLI {
 
     func checkPrerequisites() throws {
         let required = [
-            ("gtar", "gnu-tar"),
             ("ldid", "ldid-procursus"),
-            ("trustcache", "trustcache (make setup_tools)"),
         ]
         let missing = required.compactMap { command, package in
             which(command) == nil ? "\(command) — \(package)" : nil
@@ -591,7 +590,7 @@ private extension BuildRamdiskCLI {
 
             print("  Injecting SSH tools...")
             _ = try await VPhoneHost.runPrivileged(
-                which("gtar") ?? "gtar",
+                which("tar") ?? "/usr/bin/tar",
                 arguments: ["-x", "--no-overwrite-dir", "-f", inputDirectory.appendingPathComponent("ssh.tar.gz").path, "-C", mountpoint.path],
                 requireSuccess: true
             )
@@ -600,12 +599,10 @@ private extension BuildRamdiskCLI {
             try await resignMachOBinaries(in: mountpoint, inputDirectory: inputDirectory)
 
             print("  Building trustcache...")
-            _ = try await VPhoneHost.runCommand(
-                which("trustcache") ?? "trustcache",
-                arguments: ["create", trustcacheRawURL.path, mountpoint.path],
-                requireSuccess: true
-            )
-            let trustcachePayload = try Data(contentsOf: trustcacheRawURL)
+            var trustCacheBuilder = TrustCacheBuilder()
+            _ = try trustCacheBuilder.scan(mountpoint)
+            let trustcachePayload = trustCacheBuilder.serialize()
+            try trustcachePayload.write(to: trustcacheRawURL)
             let trustcacheIM4P = try IM4P(fourcc: "rtsc", description: "rtsc", payload: trustcachePayload)
             try trustcacheIM4P.data.write(to: trustcacheIM4PURL)
             try signIMG4(

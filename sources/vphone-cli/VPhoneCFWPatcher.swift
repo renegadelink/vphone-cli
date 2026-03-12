@@ -89,6 +89,17 @@ struct VPhoneCFWPatcher {
         throw VPhoneCFWPatcherError.patchSiteNotFound("Dynamic anchor not found for launchd_cache_loader")
     }
 
+    mutating func patchSeputil() throws {
+        let anchor = Data("/%s.gl\0".utf8)
+        guard let range = buffer.data.range(of: anchor) else {
+            throw VPhoneCFWPatcherError.patchSiteNotFound("Format string '/%s.gl' not found in seputil")
+        }
+        let patchOffset = range.lowerBound + 1
+        buffer.data[patchOffset] = UInt8(ascii: "A")
+        buffer.data[patchOffset + 1] = UInt8(ascii: "A")
+        print(String(format: "  [+] Patched at 0x%X: %%s -> AA", patchOffset))
+    }
+
     mutating func patchMobileactivationd() throws {
         var impFileOffset: Int?
 

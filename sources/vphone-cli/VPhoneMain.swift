@@ -48,6 +48,9 @@ struct VPhoneMain {
             case var command as SetupToolsCLI:
                 try await command.run()
 
+            case var command as CFWInstallCLI:
+                try await command.run()
+
             case var command as CFWCryptexPathsCLI:
                 try command.run()
 

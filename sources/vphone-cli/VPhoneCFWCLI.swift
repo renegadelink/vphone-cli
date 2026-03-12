@@ -191,7 +191,7 @@ struct CFWInjectLaunchDaemonCLI: ParsableCommand {
 struct CFWInjectDylibCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "cfw-inject-dylib",
-        abstract: "Inject an LC_LOAD_DYLIB into a Mach-O using insert_dylib"
+        abstract: "Inject an LC_LOAD_DYLIB into a Mach-O using inject"
     )
 
     @Argument(help: "Path to target Mach-O", transform: URL.init(fileURLWithPath:))
@@ -204,20 +204,24 @@ struct CFWInjectDylibCLI: AsyncParsableCommand {
         let insertDylib = try resolveInsertDylib()
         _ = try await VPhoneHost.runCommand(
             insertDylib,
-            arguments: ["--weak", "--inplace", "--all-yes", dylibPath, binaryURL.path],
+            arguments: [binaryURL.path, "-d", dylibPath, "-c", "weak"],
             requireSuccess: true
         )
     }
 
     func resolveInsertDylib() throws -> String {
-        if let path = which("insert_dylib") {
+        if let path = which("inject") {
             return path
         }
-        let candidate = VPhoneHost.currentDirectoryURL().appendingPathComponent(".tools/bin/insert_dylib").path
+        let vendorCandidate = VPhoneHost.currentDirectoryURL().appendingPathComponent("vendor/inject/.build/release/inject").path
+        if FileManager.default.isExecutableFile(atPath: vendorCandidate) {
+            return vendorCandidate
+        }
+        let candidate = VPhoneHost.currentDirectoryURL().appendingPathComponent(".tools/bin/inject").path
         if FileManager.default.isExecutableFile(atPath: candidate) {
             return candidate
         }
-        throw ValidationError("insert_dylib not found. Run: make setup_tools")
+        throw ValidationError("inject not found. Run: make setup_tools")
     }
 
     func which(_ command: String) -> String? {

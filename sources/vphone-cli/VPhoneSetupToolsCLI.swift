@@ -14,18 +14,12 @@ struct SetupToolsCLI: AsyncParsableCommand {
         let projectRoot = projectRoot.standardizedFileURL
         let toolsPrefix = resolveToolsPrefix(projectRoot: projectRoot)
 
-        try requireCommand("brew")
-
         try await installBrewPackages([
-            "gnu-tar",
-            "openssl@3",
-            "ldid-procursus",
-            "sshpass",
-            "git-lfs",
+            ("ldid-procursus", "ldid"),
+            ("git-lfs", "git-lfs"),
         ])
 
-        try await installTrustcache(toolsPrefix: toolsPrefix)
-        try await installInsertDylib(toolsPrefix: toolsPrefix)
+        try await installInject(toolsPrefix: toolsPrefix)
 
         print("")
         print("Tools installed in \(toolsPrefix.path)")
@@ -55,105 +49,55 @@ struct SetupToolsCLI: AsyncParsableCommand {
             .first(where: { FileManager.default.isExecutableFile(atPath: $0) })
     }
 
-    func installBrewPackages(_ packages: [String]) async throws {
-        print("[1/3] Checking Homebrew packages...")
-        var missing: [String] = []
+    func installBrewPackages(_ packages: [(package: String, command: String)]) async throws {
+        print("[1/2] Checking Homebrew packages...")
+        var missingPackages: [String] = []
 
         for package in packages {
-            let result = try await VPhoneHost.runCommand("brew", arguments: ["list", package])
-            if !result.terminationStatus.isSuccess {
-                missing.append(package)
+            if which(package.command) != nil {
+                continue
             }
+            missingPackages.append(package.package)
         }
 
-        if missing.isEmpty {
+        if missingPackages.isEmpty {
             print("  All brew packages installed")
             return
         }
 
-        print("  Installing: \(missing.joined(separator: ", "))")
-        _ = try await VPhoneHost.runCommand("brew", arguments: ["install"] + missing, requireSuccess: true)
+        guard which("brew") != nil || FileManager.default.isExecutableFile(atPath: "/opt/homebrew/bin/brew") || FileManager.default.isExecutableFile(atPath: "/usr/local/bin/brew") else {
+            throw ValidationError("Missing Homebrew. Install it or provide these tools manually: \(missingPackages.joined(separator: ", "))")
+        }
+
+        print("  Installing: \(missingPackages.joined(separator: ", "))")
+        _ = try await VPhoneHost.runCommand("brew", arguments: ["install"] + missingPackages, requireSuccess: true)
     }
 
-    func installTrustcache(toolsPrefix: URL) async throws {
-        let trustcacheBinary = toolsPrefix.appendingPathComponent("bin/trustcache")
-        print("[2/3] trustcache")
-        if FileManager.default.isExecutableFile(atPath: trustcacheBinary.path) {
-            print("  Already built: \(trustcacheBinary.path)")
+    func installInject(toolsPrefix: URL) async throws {
+        let injectBinary = toolsPrefix.appendingPathComponent("bin/inject")
+        print("[2/2] inject")
+        if FileManager.default.isExecutableFile(atPath: injectBinary.path) {
+            print("  Already built: \(injectBinary.path)")
             return
         }
 
-        let buildRoot = try VPhoneHost.tempDirectory(prefix: "vphone-trustcache")
-        defer { try? FileManager.default.removeItem(at: buildRoot) }
+        let sourceURL = projectRoot.appendingPathComponent("vendor/inject", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: sourceURL.appendingPathComponent("Package.swift").path) else {
+            throw ValidationError("Missing vendored inject source at \(sourceURL.path). Update submodules first.")
+        }
 
-        let sourceURL = buildRoot.appendingPathComponent("trustcache", isDirectory: true)
         _ = try await VPhoneHost.runCommand(
-            "git",
-            arguments: ["clone", "--depth", "1", "https://github.com/CRKatri/trustcache.git", sourceURL.path],
+            "swift",
+            arguments: ["build", "-c", "release", "--product", "inject", "--package-path", sourceURL.path],
             requireSuccess: true
         )
 
-        let opensslPrefix = VPhoneHost.stringValue(
-            try await VPhoneHost.runCommand("brew", arguments: ["--prefix", "openssl@3"], requireSuccess: true)
-        )
-        let cpuCount = VPhoneHost.stringValue(
-            try await VPhoneHost.runCommand("sysctl", arguments: ["-n", "hw.logicalcpu"], requireSuccess: true)
-        )
-
-        _ = try await VPhoneHost.runCommand(
-            "make",
-            arguments: [
-                "-C", sourceURL.path,
-                "OPENSSL=1",
-                "CFLAGS=-I\(opensslPrefix)/include -DOPENSSL -w",
-                "LDFLAGS=-L\(opensslPrefix)/lib",
-                "-j\(cpuCount)",
-            ],
-            requireSuccess: true
-        )
-
+        let builtBinary = sourceURL.appendingPathComponent(".build/release/inject")
         try FileManager.default.createDirectory(at: toolsPrefix.appendingPathComponent("bin", isDirectory: true), withIntermediateDirectories: true)
-        if FileManager.default.fileExists(atPath: trustcacheBinary.path) {
-            try FileManager.default.removeItem(at: trustcacheBinary)
+        if FileManager.default.fileExists(atPath: injectBinary.path) {
+            try FileManager.default.removeItem(at: injectBinary)
         }
-        try FileManager.default.copyItem(at: sourceURL.appendingPathComponent("trustcache"), to: trustcacheBinary)
-        print("  Installed: \(trustcacheBinary.path)")
-    }
-
-    func installInsertDylib(toolsPrefix: URL) async throws {
-        let insertDylibBinary = toolsPrefix.appendingPathComponent("bin/insert_dylib")
-        print("[3/3] insert_dylib")
-        if FileManager.default.isExecutableFile(atPath: insertDylibBinary.path) {
-            print("  Already built: \(insertDylibBinary.path)")
-            return
-        }
-
-        let sourceURL = toolsPrefix.appendingPathComponent("src/insert_dylib", isDirectory: true)
-        try FileManager.default.createDirectory(at: sourceURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-
-        if FileManager.default.fileExists(atPath: sourceURL.appendingPathComponent(".git").path) {
-            _ = try await VPhoneHost.runCommand("git", arguments: ["-C", sourceURL.path, "fetch", "--depth", "1", "origin"], requireSuccess: true)
-            _ = try await VPhoneHost.runCommand("git", arguments: ["-C", sourceURL.path, "reset", "--hard", "FETCH_HEAD"], requireSuccess: true)
-            _ = try await VPhoneHost.runCommand("git", arguments: ["-C", sourceURL.path, "clean", "-fdx"], requireSuccess: true)
-        } else {
-            _ = try await VPhoneHost.runCommand(
-                "git",
-                arguments: ["clone", "--depth", "1", "https://github.com/tyilo/insert_dylib", sourceURL.path],
-                requireSuccess: true
-            )
-        }
-
-        try FileManager.default.createDirectory(at: toolsPrefix.appendingPathComponent("bin", isDirectory: true), withIntermediateDirectories: true)
-        _ = try await VPhoneHost.runCommand(
-            "clang",
-            arguments: [
-                "-o", insertDylibBinary.path,
-                sourceURL.appendingPathComponent("insert_dylib/main.c").path,
-                "-framework", "Security",
-                "-O2",
-            ],
-            requireSuccess: true
-        )
-        print("  Installed: \(insertDylibBinary.path)")
+        try FileManager.default.copyItem(at: builtBinary, to: injectBinary)
+        print("  Installed: \(injectBinary.path)")
     }
 }

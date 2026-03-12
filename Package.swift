@@ -15,6 +15,7 @@ let package = Package(
         .package(path: "vendor/libimg4-spm"),
         .package(path: "vendor/MachOKit"),
         .package(path: "vendor/swift-subprocess"),
+        .package(path: "vendor/swift-trustcache"),
     ],
     targets: [
         .target(
@@ -33,6 +34,7 @@ let package = Package(
                 .product(name: "Capstone", package: "libcapstone-spm"),
                 .product(name: "Dynamic", package: "Dynamic"),
                 .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "TrustCache", package: "swift-trustcache"),
                 .product(name: "Img4tool", package: "libimg4-spm"),
                 "FirmwarePatcher",
             ],

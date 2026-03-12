@@ -50,7 +50,7 @@ help:
 	@echo "             SUDO_PASSWORD=...         Preload sudo credential for setup flow"
 	@echo ""
 	@echo "Setup (one-time):"
-	@echo "  make setup_tools             Install host tools (brew, trustcache, insert_dylib)"
+	@echo "  make setup_tools             Install host tools (brew, inject)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build                   Build + sign vphone-cli"
@@ -296,10 +296,10 @@ ramdisk_send:
 .PHONY: cfw_install cfw_install_dev cfw_install_jb
 
 cfw_install: patcher_build
-	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") zsh "$(CURDIR)/$(SCRIPTS)/cfw_install.sh" .
+	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") "$(CURDIR)/$(PATCHER_BINARY)" cfw-install . --project-root "$(CURDIR)" --variant regular
 
 cfw_install_dev: patcher_build
-	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") zsh "$(CURDIR)/$(SCRIPTS)/cfw_install_dev.sh" .
+	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") "$(CURDIR)/$(PATCHER_BINARY)" cfw-install . --project-root "$(CURDIR)" --variant dev
 
 cfw_install_jb: patcher_build
-	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") zsh "$(CURDIR)/$(SCRIPTS)/cfw_install_jb.sh" .
+	cd $(VM_DIR) && $(if $(SSH_PORT),SSH_PORT="$(SSH_PORT)") "$(CURDIR)/$(PATCHER_BINARY)" cfw-install . --project-root "$(CURDIR)" --variant jb
