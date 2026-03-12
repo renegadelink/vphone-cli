@@ -24,11 +24,7 @@ struct CleanProjectCLI: AsyncParsableCommand {
     mutating func run() async throws {
         let projectRoot = projectRoot.standardizedFileURL
         print("=== Cleaning all untracked files (preserving IPSWs) ===")
-        _ = try await VPhoneHost.runCommand(
-            "git",
-            arguments: ["-C", projectRoot.path, "clean", "-fdx", "-e", "*.ipsw", "-e", "*_Restore*"],
-            requireSuccess: true
-        )
+        try VPhoneGit.cleanGeneratedArtifacts(projectRoot: projectRoot)
     }
 }
 

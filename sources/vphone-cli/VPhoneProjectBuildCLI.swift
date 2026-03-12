@@ -86,13 +86,7 @@ enum HostBuildSupport {
     }
 
     static func currentGitHash(projectRoot: URL) async throws -> String {
-        let result = try await VPhoneHost.runCommand(
-            "git",
-            arguments: ["-C", projectRoot.path, "rev-parse", "--short", "HEAD"],
-            requireSuccess: false
-        )
-        let hash = result.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
-        return hash.isEmpty ? "unknown" : hash
+        try VPhoneGit.currentShortHash(projectRoot: projectRoot)
     }
 
     static func buildHostBinary(projectRoot: URL, configuration: BuildHostCLI.BuildConfiguration) async throws -> URL {
