@@ -307,13 +307,11 @@ private final class VPhoneCFWInstaller {
 
     func remoteMount(_ device: String, at mountpoint: String, options: String) async throws {
         _ = try await ssh("/bin/mkdir -p \(mountpoint)")
-        let mounted = try await ssh("/sbin/mount | /usr/bin/grep -q ' on \(mountpoint) '", requireSuccess: false)
-        if mounted.terminationStatus.isSuccess {
+        if try await isRemoteMounted(at: mountpoint) {
             return
         }
         _ = try await ssh("/sbin/mount_apfs -o \(options) \(device) \(mountpoint) 2>/dev/null || true")
-        let verify = try await ssh("/sbin/mount | /usr/bin/grep -q ' on \(mountpoint) '", requireSuccess: false)
-        guard verify.terminationStatus.isSuccess else {
+        guard try await isRemoteMounted(at: mountpoint) else {
             throw ValidationError("Failed to mount \(device) at \(mountpoint)")
         }
     }
@@ -333,10 +331,9 @@ private final class VPhoneCFWInstaller {
     }
 
     func installCryptexesIfNeeded(restoreDirectory: URL, systemOSRelativePath: String, appOSRelativePath: String) async throws {
-        let osCount = try await ssh("/bin/ls /mnt1/System/Cryptexes/OS/ 2>/dev/null | /usr/bin/wc -l", requireSuccess: false)
-        let appCount = try await ssh("/bin/ls /mnt1/System/Cryptexes/App/ 2>/dev/null | /usr/bin/wc -l", requireSuccess: false)
-        let installed = (Int(osCount.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0) > 0 &&
-            (Int(appCount.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0) > 0
+        let hasOSCryptexes = try await remoteDirectoryHasEntries("/mnt1/System/Cryptexes/OS")
+        let hasAppCryptexes = try await remoteDirectoryHasEntries("/mnt1/System/Cryptexes/App")
+        let installed = hasOSCryptexes && hasAppCryptexes
 
         if installed {
             try await ensureDyldSymlinks()
@@ -574,8 +571,7 @@ private final class VPhoneCFWInstaller {
 
     func installJBBootstrap() async throws {
         try await remoteMount("/dev/disk1s5", at: "/mnt5", options: "rw")
-        let hashResult = try await ssh("/bin/ls /mnt5 2>/dev/null | awk 'length($0)==96{print; exit}'")
-        let bootHash = hashResult.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bootHash = try await resolveBootHash(in: "/mnt5")
         guard !bootHash.isEmpty else { throw ValidationError("Could not find boot manifest hash in /mnt5") }
 
         let bootstrapArchive = jbInputDirectory.appendingPathComponent("jb/bootstrap-iphoneos-arm64.tar.zst")
@@ -656,7 +652,7 @@ private final class VPhoneCFWInstaller {
         )
         try await ldidSign(output, entitlements: nil, bundleID: nil)
 
-        let bootHash = VPhoneHost.stringValue(try await ssh("/bin/ls /mnt5 2>/dev/null | awk 'length($0)==96{print; exit}'"))
+        let bootHash = try await resolveBootHash(in: "/mnt5")
         _ = try await ssh("/bin/mkdir -p /mnt5/\(bootHash)/jb-vphone/procursus/usr/lib")
         try await scpTo(output.path, remotePath: "/mnt5/\(bootHash)/jb-vphone/procursus/usr/lib/TweakLoader.dylib")
         _ = try await ssh("/usr/sbin/chown 0:0 /mnt5/\(bootHash)/jb-vphone/procursus/usr/lib/TweakLoader.dylib")
@@ -715,6 +711,27 @@ private final class VPhoneCFWInstaller {
             throw ValidationError("SSH client is not connected")
         }
         return sshClient
+    }
+
+    func isRemoteMounted(at mountpoint: String) async throws -> Bool {
+        let mounts = try await ssh("/sbin/mount")
+        return mounts.standardOutput.contains(" on \(mountpoint) ")
+    }
+
+    func remoteDirectoryHasEntries(_ path: String) async throws -> Bool {
+        let command = "/bin/sh -c 'set -- \(path)/*; [ \"$1\" = \"\(path)/*\" ] && exit 1; exit 0'"
+        let result = try await ssh(command, requireSuccess: false)
+        return result.terminationStatus.isSuccess
+    }
+
+    func resolveBootHash(in directory: String) async throws -> String {
+        let command = #"/bin/sh -c 'for entry in "# + directory + #"/"*; do name=${entry##*/}; [ ${#name} -eq 96 ] && { printf "%s\n" "$name"; exit 0; }; done; exit 1'"#
+        let result = try await ssh(command, requireSuccess: false)
+        let bootHash = result.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard result.terminationStatus.isSuccess, !bootHash.isEmpty else {
+            throw ValidationError("Could not find boot manifest hash in \(directory)")
+        }
+        return bootHash
     }
 
     func unmount(paths: [String]) async throws {
