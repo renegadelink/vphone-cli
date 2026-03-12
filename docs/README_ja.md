@@ -35,9 +35,7 @@ Apple の Virtualization.framework と PCC の研究用 VM インフラを使用
 
 **SIP/AMFIの設定** — プライベートな Virtualization.framework の entitlement と未署名バイナリのワークフローに必要です。
 
-復旧モードで起動し（電源ボタンを長押し）、ターミナルを開いて、以下のいずれかの方法を選択します：
-
-- **方法 1：SIP を完全に無効化 + AMFI boot-arg（最も制限が少ない）**
+復旧モードで起動し（電源ボタンを長押し）、ターミナルを開いて、以下の必須設定を適用します：
 
   復旧モードで：
 
@@ -53,30 +51,6 @@ Apple の Virtualization.framework と PCC の研究用 VM インフラを使用
   ```
 
   もう一度再起動します。
-
-- **方法 2：SIP はほぼ有効のまま、デバッグ制限のみ無効化、[`amfidont`](https://github.com/zqxwce/amfidont) を使用**
-
-  復旧モードで：
-
-  ```bash
-  csrutil enable --without debug
-  csrutil allow-research-guests enable
-  ```
-
-  通常の macOS に再起動した後：
-
-  ```bash
-  pip3 install amfidont
-  sudo amfidont --path [PATH_TO_VPHONE_DIR]
-  ```
-
-  リポジトリには補助ターゲットもあります：
-
-  ```bash
-  make amfidont_allow_vphone
-  ```
-
-  このターゲットは、現在署名済みの `vphone-cli` の CDHash を計算し、`AMFIPathValidator` で実際に観測された URL エンコード済みのプロジェクトパスを使用します。
 
 **依存関係のインストール:**
 
@@ -221,16 +195,13 @@ make boot
 
 **Q: 実行しようとすると `zsh: killed ./vphone-cli` と表示されます**
 
-AMFI/デバッグ制限が正しくバイパスされていません。以下のいずれかの方法を選択してください：
+AMFI/デバッグ制限が正しくバイパスされていません。復旧モードの設定とホストの boot-args を再確認してください：
 
-- **方法 1（AMFI を完全に無効化）：**
+- **必要なホスト設定：**
 
   ```bash
   sudo nvram boot-args="amfi_get_out_of_my_way=1 -v"
   ```
-
-- **方法 2（デバッグ制限のみ無効化）：**
-  復旧モードで `csrutil enable --without debug`（完全な SIP 無効化は不要）を使用し、[`amfidont`](https://github.com/zqxwce/amfidont) をインストール/ロードして AMFI のその他の機能は有効のままにします。
 
 **Q: システムアプリ（App Store、メッセージなど）がダウンロード・インストールできません**
 

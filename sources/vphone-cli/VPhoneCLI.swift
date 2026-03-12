@@ -27,7 +27,6 @@ struct VPhoneCLI: ParsableCommand {
             USBMuxListCLI.self,
             USBMuxForwardCLI.self,
             BootHostPreflightCLI.self,
-            StartAmfidontCLI.self,
             CFWCryptexPathsCLI.self,
             CFWPatchSeputilCLI.self,
             CFWPatchLaunchdCacheLoaderCLI.self,

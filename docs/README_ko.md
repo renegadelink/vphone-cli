@@ -35,9 +35,7 @@ PCC 리서치 VM 인프라와 Apple의 Virtualization.framework를 사용하여 
 
 **SIP/AMFI 설정** — Private Virtualization.framework 권한과 서명되지 않은 바이너리 워크플로우에 필요합니다.
 
-복구 모드(전원 버튼 길게 누르기)로 부팅한 후 터미널을 열고, 다음 중 하나를 선택합니다:
-
-- **방법 1: SIP 완전 비활성화 + AMFI boot-arg (가장 관대)**
+복구 모드(전원 버튼 길게 누르기)로 부팅한 후 터미널을 열고, 다음 필수 설정을 적용합니다:
 
   복구 모드에서:
 
@@ -53,30 +51,6 @@ PCC 리서치 VM 인프라와 Apple의 Virtualization.framework를 사용하여 
   ```
 
   한 번 더 재시작합니다.
-
-- **방법 2: SIP은 대부분 활성 유지, 디버그 제한만 비활성화, [`amfidont`](https://github.com/zqxwce/amfidont) 사용**
-
-  복구 모드에서:
-
-  ```bash
-  csrutil enable --without debug
-  csrutil allow-research-guests enable
-  ```
-
-  macOS로 다시 시작한 후:
-
-  ```bash
-  pip3 install amfidont
-  sudo amfidont --path [PATH_TO_VPHONE_DIR]
-  ```
-
-  저장소에는 보조 타깃도 있습니다:
-
-  ```bash
-  make amfidont_allow_vphone
-  ```
-
-  이 타깃은 현재 서명된 `vphone-cli`의 CDHash를 계산하고, `AMFIPathValidator`에서 실제로 관찰된 URL-encoded 프로젝트 경로를 사용합니다.
 
 **의존성(Dependencies) 설치:**
 
@@ -221,16 +195,13 @@ make boot
 
 **Q: 실행하려고 하면 `zsh: killed ./vphone-cli` 오류가 발생합니다.**
 
-AMFI/디버그 제한이 올바르게 우회되지 않았습니다. 다음 중 하나를 선택하세요:
+AMFI/디버그 제한이 올바르게 우회되지 않았습니다. 복구 모드 설정과 호스트 boot-args를 다시 확인하세요:
 
-- **방법 1 (AMFI 완전 비활성화):**
+- **필수 호스트 설정:**
 
   ```bash
   sudo nvram boot-args="amfi_get_out_of_my_way=1 -v"
   ```
-
-- **방법 2 (디버그 제한만 비활성화):**
-  복구 모드에서 `csrutil enable --without debug`(완전한 SIP 비활성화 없음)를 사용한 다음, [`amfidont`](https://github.com/zqxwce/amfidont)를 설치/로드하여 AMFI의 나머지 기능은 활성 상태로 유지합니다.
 
 **Q: 시스템 앱(App Store, 메시지 등)을 다운로드하거나 설치할 수 없습니다.**
 

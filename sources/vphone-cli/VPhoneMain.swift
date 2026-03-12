@@ -39,9 +39,6 @@ struct VPhoneMain {
             case var command as BootHostPreflightCLI:
                 try await command.run()
 
-            case var command as StartAmfidontCLI:
-                try await command.run()
-
             case var command as GenerateFirmwareManifestCLI:
                 try command.run()
 

@@ -217,7 +217,6 @@ enum VPhoneHost {
         var searchDirectories: [URL] = []
         searchDirectories.append(contentsOf: additionalSearchDirectories)
         searchDirectories.append(contentsOf: pathSearchDirectories())
-        searchDirectories.append(contentsOf: userPythonBinDirectories())
 
         var seenPaths = Set<String>()
         for directory in searchDirectories {
@@ -238,25 +237,6 @@ enum VPhoneHost {
         return pathValue
             .split(separator: ":")
             .map { URL(fileURLWithPath: String($0), isDirectory: true) }
-    }
-
-    static func userPythonBinDirectories() -> [URL] {
-        let pythonRoot = URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
-            .appendingPathComponent("Library/Python", isDirectory: true)
-        guard let entries = try? FileManager.default.contentsOfDirectory(
-            at: pythonRoot,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            return []
-        }
-
-        return entries
-            .filter {
-                (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
-            }
-            .sorted { $0.lastPathComponent > $1.lastPathComponent }
-            .map { $0.appendingPathComponent("bin", isDirectory: true) }
     }
 
     static func createSparseFile(at url: URL, size: UInt64) throws {

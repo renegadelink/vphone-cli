@@ -35,9 +35,7 @@
 
 **配置 SIP/AMFI** —— 需要私有的 Virtualization.framework 权限和未签名二进制文件工作流。
 
-重启到恢复模式（长按电源键），打开终端，选择以下任一设置方式：
-
-- **方式 1：完全禁用 SIP + AMFI boot-arg（最宽松）**
+重启到恢复模式（长按电源键），打开终端，然后应用以下必需设置：
 
   在恢复模式中：
 
@@ -53,30 +51,6 @@
   ```
 
   再重启一次。
-
-- **方式 2：保持 SIP 大部分启用，仅禁用调试限制，使用 [`amfidont`](https://github.com/zqxwce/amfidont)**
-
-  在恢复模式中：
-
-  ```bash
-  csrutil enable --without debug
-  csrutil allow-research-guests enable
-  ```
-
-  重新启动回 macOS 后：
-
-  ```bash
-  pip3 install amfidont
-  sudo amfidont --path [PATH_TO_VPHONE_DIR]
-  ```
-
-  仓库内也提供辅助目标：
-
-  ```bash
-  make amfidont_allow_vphone
-  ```
-
-  该目标会计算当前已签名 `vphone-cli` 的 CDHash，并使用 `AMFIPathValidator` 实际观察到的 URL 编码项目路径。
 
 **安装依赖：**
 
@@ -221,16 +195,13 @@ make boot
 
 **问：运行时出现 `zsh: killed ./vphone-cli`。**
 
-AMFI/调试限制未正确绕过。选择以下任一方式：
+AMFI/调试限制未正确绕过。请重新检查恢复模式配置和主机 boot-args：
 
-- **方式 1（完全禁用 AMFI）：**
+- **必需的主机设置：**
 
   ```bash
   sudo nvram boot-args="amfi_get_out_of_my_way=1 -v"
   ```
-
-- **方式 2（仅禁用调试限制）：**
-  在恢复模式中使用 `csrutil enable --without debug`（不完全禁用 SIP），然后安装/加载 [`amfidont`](https://github.com/zqxwce/amfidont)，保持 AMFI 其他功能不变。
 
 **问：系统应用（App Store、信息等）无法下载或安装。**
 

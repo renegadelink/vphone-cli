@@ -92,7 +92,7 @@ scripts/
 ├── vphone_jb_setup.plist         # First-boot JB LaunchDaemon plist
 └── vphone_jb_setup.sh            # Guest-side first-boot JB finalization
 
-Host-side automation entrypoints now live in `sources/vphone-cli/` subcommands such as `vm-create`, `generate-vm-manifest`, `prepare-firmware`, `patch-firmware`, `build-ramdisk`, `send-ramdisk`, `cfw-install`, `setup-tools`, `setup-machine`, `boot-host-preflight`, `start-amfidont`, and `usbmux-forward`.
+Host-side automation entrypoints now live in `sources/vphone-cli/` subcommands such as `vm-create`, `generate-vm-manifest`, `prepare-firmware`, `patch-firmware`, `build-ramdisk`, `send-ramdisk`, `cfw-install`, `setup-tools`, `setup-machine`, `boot-host-preflight`, `build-host`, `bundle-app`, `build-vphoned`, and `usbmux-forward`.
 
 research/                         # Detailed firmware/patch documentation
 ```

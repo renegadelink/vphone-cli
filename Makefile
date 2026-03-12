@@ -66,7 +66,6 @@ help:
 	@echo "             CPU=8             CPU cores (stored in manifest)"
 	@echo "             MEMORY=8192       Memory in MB (stored in manifest)"
 	@echo "             DISK_SIZE=64      Disk size in GB (stored in manifest)"
-	@echo "  make amfidont_allow_vphone   Start amfidont for the signed vphone-cli binary"
 	@echo "  make boot_host_preflight     Diagnose whether host can launch signed PV=3 binary"
 	@echo "  make boot                    Boot VM (reads from config.plist)"
 	@echo "  make boot_dfu                Boot VM in DFU mode (reads from config.plist)"
@@ -161,7 +160,7 @@ vphoned: patcher_build setup_tools
 # VM management
 # ═══════════════════════════════════════════════════════════════════
 
-.PHONY: vm_new amfidont_allow_vphone boot_host_preflight boot boot_dfu boot_binary_check
+.PHONY: vm_new boot_host_preflight boot boot_dfu boot_binary_check
 
 vm_new: patcher_build
 	"$(CURDIR)/$(PATCHER_BINARY)" vm-create \
@@ -169,9 +168,6 @@ vm_new: patcher_build
 		--disk-size "$(DISK_SIZE)" \
 		--cpu "$(CPU)" \
 		--memory "$(MEMORY)"
-
-amfidont_allow_vphone: build patcher_build
-	"$(CURDIR)/$(PATCHER_BINARY)" start-amfidont --project-root "$(CURDIR)"
 
 boot_host_preflight: build patcher_build
 	"$(CURDIR)/$(PATCHER_BINARY)" boot-host-preflight --project-root "$(CURDIR)"

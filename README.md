@@ -35,9 +35,7 @@ See [research/0_binary_patch_comparison.md](./research/0_binary_patch_comparison
 
 **Configure SIP/AMFI** — required for private Virtualization.framework entitlements and unsigned binary workflows.
 
-Boot into Recovery (long press power button), open Terminal, then choose one setup path:
-
-- **Option 1: Fully disable SIP + AMFI boot-arg (most permissive)**
+Boot into Recovery (long press power button), open Terminal, then apply the required settings:
 
   In Recovery:
 
@@ -53,31 +51,6 @@ Boot into Recovery (long press power button), open Terminal, then choose one set
   ```
 
   Restart once more.
-
-- **Option 2: Keep SIP mostly enabled, disable only debug restrictions, use [`amfidont`](https://github.com/zqxwce/amfidont)**
-
-  In Recovery:
-
-  ```bash
-  csrutil enable --without debug
-  csrutil allow-research-guests enable
-  ```
-
-  After restarting into macOS:
-
-  ```bash
-  pip3 install amfidont
-  sudo amfidont --path [PATH_TO_VPHONE_DIR]
-  ```
-
-  Repo helper:
-
-  ```bash
-  make amfidont_allow_vphone
-  ```
-
-  This helper computes the current signed `vphone-cli` CDHash and uses the
-  URL-encoded project path form observed by `AMFIPathValidator`.
 
 **Install dependencies:**
 
@@ -222,18 +195,13 @@ Connect via:
 
 **Q: I get `zsh: killed ./vphone-cli` when trying to run it.**
 
-AMFI/debug restrictions are not bypassed correctly. Choose one setup path:
+AMFI/debug restrictions are not bypassed correctly. Re-check the Recovery-mode setup and host boot-args:
 
-- **Option 1 (full AMFI disable):**
+- **Required host setting:**
 
   ```bash
   sudo nvram boot-args="amfi_get_out_of_my_way=1 -v"
   ```
-
-- **Option 2 (debug restrictions only):**
-  use Recovery mode `csrutil enable --without debug` (no full SIP disable), then install/load [`amfidont`](https://github.com/zqxwce/amfidont) while keeping AMFI otherwise enabled.
-  For this repo, `make amfidont_allow_vphone` packages the required encoded-path
-  and CDHash allowlist startup.
 
 **Q: `make boot` / `make boot_dfu` starts and then fails with `VZErrorDomain Code=2 "Virtualization is not available on this hardware."`**
 
