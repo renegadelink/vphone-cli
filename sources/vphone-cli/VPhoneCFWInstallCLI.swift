@@ -26,15 +26,16 @@ struct CFWInstallCLI: AsyncParsableCommand {
     var sshPort: Int = Int(ProcessInfo.processInfo.environment["SSH_PORT"] ?? "2222") ?? 2222
 
     @Flag(help: "Skip halting the ramdisk after install")
-    var skipHalt: Bool = ProcessInfo.processInfo.environment["CFW_SKIP_HALT"] == "1"
+    var skipHalt = false
 
     mutating func run() async throws {
+        let effectiveSkipHalt = skipHalt || ProcessInfo.processInfo.environment["CFW_SKIP_HALT"] == "1"
         let installer = try VPhoneCFWInstaller(
             vmDirectory: vmDirectory.standardizedFileURL,
             projectRoot: projectRoot.standardizedFileURL,
             variant: variant,
             sshPort: sshPort,
-            skipHalt: skipHalt
+            skipHalt: effectiveSkipHalt
         )
         try await installer.run()
     }

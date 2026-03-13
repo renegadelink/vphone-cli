@@ -56,16 +56,13 @@ struct SetupMachineCLI: AsyncParsableCommand {
     }()
 
     @Flag(help: "Skip setup_tools/build stage")
-    var skipProjectSetup: Bool = {
-        ["1", "true", "yes"].contains(ProcessInfo.processInfo.environment["SKIP_PROJECT_SETUP"]?.lowercased() ?? "")
-    }()
+    var skipProjectSetup = false
 
     @Flag(help: "Auto-continue first boot and final boot analysis")
-    var nonInteractive: Bool = {
-        ["1", "true", "yes"].contains(ProcessInfo.processInfo.environment["NONE_INTERACTIVE"]?.lowercased() ?? "")
-    }()
+    var nonInteractive = false
 
     mutating func run() async throws {
+        let environment = ProcessInfo.processInfo.environment
         let runner = try SetupMachineRunner(
             projectRoot: projectRoot.standardizedFileURL,
             vmDirectoryName: vmDirectory,
@@ -79,10 +76,14 @@ struct SetupMachineCLI: AsyncParsableCommand {
             cloudOSSource: cloudOSSource,
             ipswDirectory: ipswDirectory?.standardizedFileURL,
             variant: variant,
-            skipProjectSetup: skipProjectSetup,
-            nonInteractive: nonInteractive
+            skipProjectSetup: skipProjectSetup || Self.boolEnvironmentValue("SKIP_PROJECT_SETUP", environment: environment),
+            nonInteractive: nonInteractive || Self.boolEnvironmentValue("NONE_INTERACTIVE", environment: environment)
         )
         try await runner.run()
+    }
+
+    static func boolEnvironmentValue(_ key: String, environment: [String: String]) -> Bool {
+        ["1", "true", "yes"].contains(environment[key]?.lowercased() ?? "")
     }
 }
 

@@ -1,4 +1,7 @@
 import Foundation
+import NIOCore
+import NIOPosix
+import NIOSSH
 
 struct VPhoneSSHCommandResult {
     let exitStatus: Int32
@@ -16,14 +19,20 @@ struct VPhoneSSHCommandResult {
 
 enum VPhoneSSHError: Error, CustomStringConvertible {
     case notConnected
+    case invalidChannelType
     case commandFailed(String)
+    case timeout(String)
 
     var description: String {
         switch self {
         case .notConnected:
             return "SSH client is not connected"
+        case .invalidChannelType:
+            return "Invalid SSH channel type"
         case let .commandFailed(message):
             return message
+        case let .timeout(context):
+            return "SSH timeout: \(context)"
         }
     }
 }
@@ -34,8 +43,13 @@ final class VPhoneSSHClient: @unchecked Sendable {
     let username: String
     let password: String
 
-    private var connected = false
-    private var controlPath: URL?
+    private let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    private var channel: Channel?
+    private var sshHandler: NIOSSHHandler?
+    private var shutDown = false
+    private var debugEnabled: Bool {
+        ProcessInfo.processInfo.environment["VPHONE_SSH_DEBUG"] == "1"
+    }
 
     init(host: String, port: Int, username: String, password: String) {
         self.host = host
@@ -44,48 +58,132 @@ final class VPhoneSSHClient: @unchecked Sendable {
         self.password = password
     }
 
+    deinit {
+        try? shutdown()
+    }
+
     func connect() throws {
-        if connected { return }
-        let token = String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(12))
-        let socketPath = URL(fileURLWithPath: "/tmp/vssh.\(token).sock")
-        do {
-            let result = try runProcess(
-                executable: "/usr/bin/ssh",
-                arguments: masterArguments(controlPath: socketPath),
-                stdin: nil
-            )
-            guard result.exitStatus == 0 else {
-                throw VPhoneSSHError.commandFailed(result.standardErrorString)
+        guard channel == nil else { return }
+        let connectionState = VPhoneSSHConnectionState(eventLoop: group.next())
+        debug("connect begin host=\(host) port=\(port) user=\(username)")
+
+        let bootstrap = ClientBootstrap(group: group)
+            .channelInitializer { [username, password] channel in
+                let configuration = SSHClientConfiguration(
+                    userAuthDelegate: SimplePasswordDelegate(username: username, password: password),
+                    serverAuthDelegate: AcceptAllHostKeysDelegate(),
+                    transportProtectionSchemes: [
+                        AES256CTRHMACSHA256TransportProtection.self,
+                        AES128CTRHMACSHA256TransportProtection.self,
+                        AES256CTRHMACSHA1TransportProtection.self,
+                        AES128CTRHMACSHA1TransportProtection.self,
+                    ]
+                )
+                let ssh = NIOSSHHandler(
+                    role: .client(configuration),
+                    allocator: channel.allocator,
+                    inboundChildChannelInitializer: nil
+                )
+                connectionState.sshHandler = ssh
+                return channel.pipeline.addHandler(ssh).flatMap {
+                    channel.pipeline.addHandler(VPhoneSSHConnectionHandler(readyPromise: connectionState.readyPromise))
+                }.flatMap {
+                    channel.pipeline.addHandler(VPhoneSSHErrorHandler())
+                }
             }
-            controlPath = socketPath
-            connected = true
-        } catch {
-            try? FileManager.default.removeItem(at: socketPath)
-            throw error
+            .connectTimeout(.seconds(5))
+            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .channelOption(ChannelOptions.socket(SocketOptionLevel(IPPROTO_TCP), TCP_NODELAY), value: 1)
+
+        let connectedChannel = try waitForFuture(
+            bootstrap.connect(host: host, port: port),
+            timeout: .seconds(8),
+            context: "tcp connect to \(host):\(port)"
+        )
+        debug("tcp connected")
+        channel = connectedChannel
+        _ = try waitForFuture(
+            connectionState.readyPromise.futureResult,
+            timeout: .seconds(8),
+            context: "SSH authentication"
+        )
+        debug("ssh authenticated")
+        guard let sshHandler = connectionState.sshHandler else {
+            throw VPhoneSSHError.notConnected
         }
+        self.sshHandler = sshHandler
     }
 
     func shutdown() throws {
-        if let controlPath {
-            _ = try? runProcess(
-                executable: "/usr/bin/ssh",
-                arguments: controlArguments(controlPath: controlPath) + ["-O", "exit", "\(username)@\(host)"],
-                stdin: nil
-            )
+        guard !shutDown else { return }
+        shutDown = true
+        if let channel {
+            try? channel.close().wait()
+            self.channel = nil
+            self.sshHandler = nil
         }
-        if let controlPath {
-            try? FileManager.default.removeItem(at: controlPath)
-        }
-        controlPath = nil
-        connected = false
+        try group.syncShutdownGracefully()
     }
 
     func execute(_ command: String, stdin: Data? = nil, requireSuccess: Bool = true) throws -> VPhoneSSHCommandResult {
-        guard connected else {
+        guard let channel, let sshHandler else {
             throw VPhoneSSHError.notConnected
         }
+        debug("execute command=\(command)")
 
-        let result = try runSSH(command: command, stdin: stdin)
+        let resultBox = VPhoneSSHCommandResultBox(eventLoop: channel.eventLoop)
+        let childPromise = channel.eventLoop.makePromise(of: Channel.self)
+        let createChannelPromise = channel.eventLoop.makePromise(of: Void.self)
+        let commandTimeout: TimeAmount
+        if let stdin, stdin.count > 1_000_000 {
+            commandTimeout = .seconds(600)
+        } else if stdin != nil {
+            commandTimeout = .seconds(120)
+        } else {
+            commandTimeout = .seconds(30)
+        }
+        channel.eventLoop.execute {
+            sshHandler.createChannel(childPromise) { childChannel, channelType in
+                guard channelType == .session else {
+                    return channel.eventLoop.makeFailedFuture(VPhoneSSHError.invalidChannelType)
+                }
+
+                return childChannel.pipeline.addHandler(
+                    VPhoneSSHExecHandler(command: command, stdinData: stdin, resultBox: resultBox)
+                )
+            }
+            createChannelPromise.succeed(())
+        }
+
+        childPromise.futureResult.whenFailure { error in
+            resultBox.fail(error)
+        }
+
+        let result: VPhoneSSHCommandResult
+        do {
+            _ = try waitForFuture(
+                createChannelPromise.futureResult,
+                timeout: .seconds(2),
+                context: "schedule exec channel open"
+            )
+            debug("exec channel scheduled")
+            let childChannel = try waitForFuture(
+                childPromise.futureResult,
+                timeout: .seconds(8),
+                context: "open exec channel"
+            )
+            debug("exec channel active")
+            result = try waitForFuture(
+                resultBox.futureResult,
+                timeout: commandTimeout,
+                context: "command result"
+            )
+            debug("command result exit=\(result.exitStatus)")
+            childChannel.close(promise: nil)
+        } catch {
+            resultBox.fail(error)
+            throw error
+        }
         if requireSuccess, result.exitStatus != 0 {
             let stderr = result.standardErrorString.trimmingCharacters(in: .whitespacesAndNewlines)
             throw VPhoneSSHError.commandFailed(
@@ -141,109 +239,6 @@ final class VPhoneSSHClient: @unchecked Sendable {
             }
             return false
         }
-    }
-
-    private func runSSH(command: String, stdin: Data?) throws -> VPhoneSSHCommandResult {
-        let result = try runProcess(
-            executable: "/usr/bin/ssh",
-            arguments: sshArguments(command: command),
-            stdin: stdin
-        )
-        return VPhoneSSHCommandResult(
-            exitStatus: result.exitStatus,
-            standardOutput: result.standardOutput,
-            standardError: result.standardError
-        )
-    }
-
-    private func sshArguments(command: String) -> [String] {
-        var arguments = sshBaseArguments()
-        if let controlPath {
-            arguments.append(contentsOf: controlArguments(controlPath: controlPath))
-        }
-        arguments.append(contentsOf: [
-            "-p", "\(port)",
-            "\(username)@\(host)",
-            command,
-        ])
-        return arguments
-    }
-
-    private func masterArguments(controlPath: URL) -> [String] {
-        var arguments = sshBaseArguments()
-        arguments.append(contentsOf: [
-            "-M",
-            "-S", controlPath.path,
-            "-o", "ControlMaster=yes",
-            "-o", "ControlPersist=yes",
-            "-p", "\(port)",
-            "-f",
-            "-N",
-            "\(username)@\(host)",
-        ])
-        return arguments
-    }
-
-    private func sshBaseArguments() -> [String] {
-        [
-            "-F", "/dev/null",
-            "-T",
-            "-o", "LogLevel=ERROR",
-            "-o", "StrictHostKeyChecking=no",
-            "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "GlobalKnownHostsFile=/dev/null",
-            "-o", "UpdateHostKeys=no",
-            "-o", "PreferredAuthentications=password,keyboard-interactive",
-            "-o", "PubkeyAuthentication=no",
-            "-o", "NumberOfPasswordPrompts=1",
-            "-o", "ConnectTimeout=5",
-        ]
-    }
-
-    private func controlArguments(controlPath: URL) -> [String] {
-        ["-S", controlPath.path, "-o", "ControlMaster=no"]
-    }
-
-    private func runProcess(executable: String, arguments: [String], stdin: Data?) throws -> VPhoneSSHCommandResult {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-
-        var environment = ProcessInfo.processInfo.environment
-        for (key, value) in VPhoneHost.sshAskpassEnvironment(password: password) {
-            if let value {
-                environment[key] = value
-            } else {
-                environment.removeValue(forKey: key)
-            }
-        }
-        process.environment = environment
-
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
-        process.standardOutput = stdoutPipe
-        process.standardError = stderrPipe
-
-        if let stdin, !stdin.isEmpty {
-            let stdinPipe = Pipe()
-            process.standardInput = stdinPipe
-            try process.run()
-            stdinPipe.fileHandleForWriting.write(stdin)
-            try stdinPipe.fileHandleForWriting.close()
-        } else {
-            process.standardInput = FileHandle.nullDevice
-            try process.run()
-        }
-
-        let stdout = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-        let stderr = stderrPipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-
-        return VPhoneSSHCommandResult(
-            exitStatus: process.terminationStatus,
-            standardOutput: stdout,
-            standardError: stderr
-        )
     }
 
     private func shellQuote(_ string: String) -> String {
@@ -311,5 +306,265 @@ final class VPhoneSSHClient: @unchecked Sendable {
             return (remotePath as NSString).appendingPathComponent(localName)
         }
         return remotePath
+    }
+
+    private func waitForFuture<Value>(
+        _ future: EventLoopFuture<Value>,
+        timeout: TimeAmount,
+        context: String
+    ) throws -> Value {
+        let promise = future.eventLoop.makePromise(of: Value.self)
+        let scheduled = future.eventLoop.scheduleTask(in: timeout) {
+            promise.fail(VPhoneSSHError.timeout(context))
+        }
+        future.whenComplete { result in
+            scheduled.cancel()
+            switch result {
+            case let .success(value):
+                promise.succeed(value)
+            case let .failure(error):
+                promise.fail(error)
+            }
+        }
+        return try promise.futureResult.wait()
+    }
+
+    private func debug(_ message: String) {
+        guard debugEnabled else { return }
+        FileHandle.standardError.write(Data("[ssh] \(message)\n".utf8))
+    }
+}
+
+private final class VPhoneSSHExecHandler: ChannelDuplexHandler, @unchecked Sendable {
+    typealias InboundIn = SSHChannelData
+    typealias InboundOut = SSHChannelData
+    typealias OutboundIn = SSHChannelData
+    typealias OutboundOut = SSHChannelData
+
+    let command: String
+    let stdinData: Data?
+    let resultBox: VPhoneSSHCommandResultBox
+    let stdinChunkSize = 256 * 1024
+
+    var standardOutput = Data()
+    var standardError = Data()
+    var exitStatus: Int32 = 0
+    var completed = false
+    var stdinOffset = 0
+
+    init(command: String, stdinData: Data?, resultBox: VPhoneSSHCommandResultBox) {
+        self.command = command
+        self.stdinData = stdinData
+        self.resultBox = resultBox
+    }
+
+    func handlerAdded(context: ChannelHandlerContext) {
+        let loopBoundContext = NIOLoopBound(context, eventLoop: context.eventLoop)
+        context.channel.setOption(ChannelOptions.allowRemoteHalfClosure, value: true).whenFailure { error in
+            self.fail(error, context: loopBoundContext.value)
+        }
+    }
+
+    func channelActive(context: ChannelHandlerContext) {
+        let loopBoundContext = NIOLoopBound(context, eventLoop: context.eventLoop)
+        if ProcessInfo.processInfo.environment["VPHONE_SSH_DEBUG"] == "1" {
+            FileHandle.standardError.write(Data("[ssh] exec handler active command=\(command)\n".utf8))
+        }
+        let request = SSHChannelRequestEvent.ExecRequest(command: command, wantReply: true)
+        context.triggerUserOutboundEvent(request).whenComplete { result in
+            switch result {
+            case .success:
+                self.sendStandardInput(context: loopBoundContext.value)
+            case .failure(let error):
+                self.fail(error, context: loopBoundContext.value)
+            }
+        }
+    }
+
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        let message = unwrapInboundIn(data)
+        guard case .byteBuffer(var bytes) = message.data,
+              let chunk = bytes.readData(length: bytes.readableBytes)
+        else {
+            return
+        }
+
+        switch message.type {
+        case .channel:
+            standardOutput.append(chunk)
+        case .stdErr:
+            standardError.append(chunk)
+        default:
+            break
+        }
+    }
+
+    func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+        if let exit = event as? SSHChannelRequestEvent.ExitStatus {
+            exitStatus = Int32(exit.exitStatus)
+            if ProcessInfo.processInfo.environment["VPHONE_SSH_DEBUG"] == "1" {
+                FileHandle.standardError.write(Data("[ssh] exit status=\(exit.exitStatus)\n".utf8))
+            }
+        } else {
+            context.fireUserInboundEventTriggered(event)
+        }
+    }
+
+    func channelInactive(context: ChannelHandlerContext) {
+        if ProcessInfo.processInfo.environment["VPHONE_SSH_DEBUG"] == "1" {
+            FileHandle.standardError.write(Data("[ssh] exec handler inactive command=\(command)\n".utf8))
+        }
+        succeedIfNeeded()
+        context.fireChannelInactive()
+    }
+
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
+        fail(error, context: context)
+    }
+
+    private func sendStandardInput(context: ChannelHandlerContext) {
+        guard let stdinData, !stdinData.isEmpty else {
+            context.close(mode: .output, promise: nil)
+            return
+        }
+        writeNextStandardInputChunk(context: context, stdinData: stdinData)
+    }
+
+    private func writeNextStandardInputChunk(context: ChannelHandlerContext, stdinData: Data) {
+        if stdinOffset >= stdinData.count {
+            context.close(mode: .output, promise: nil)
+            return
+        }
+
+        let nextOffset = min(stdinOffset + stdinChunkSize, stdinData.count)
+        let chunk = stdinData[stdinOffset..<nextOffset]
+        stdinOffset = nextOffset
+
+        var buffer = context.channel.allocator.buffer(capacity: chunk.count)
+        buffer.writeBytes(chunk)
+        let payload = SSHChannelData(type: .channel, data: .byteBuffer(buffer))
+        let loopBoundContext = NIOLoopBound(context, eventLoop: context.eventLoop)
+        context.writeAndFlush(wrapOutboundOut(payload)).whenComplete { result in
+            switch result {
+            case .success:
+                self.writeNextStandardInputChunk(context: loopBoundContext.value, stdinData: stdinData)
+            case .failure(let error):
+                self.fail(error, context: loopBoundContext.value)
+            }
+        }
+    }
+
+    private func succeedIfNeeded() {
+        guard !completed else { return }
+        completed = true
+        resultBox.succeed(
+            VPhoneSSHCommandResult(
+                exitStatus: exitStatus,
+                standardOutput: standardOutput,
+                standardError: standardError
+            )
+        )
+    }
+
+    private func fail(_ error: Error, context: ChannelHandlerContext) {
+        guard !completed else { return }
+        completed = true
+        resultBox.fail(error)
+        context.close(promise: nil)
+    }
+}
+
+private final class VPhoneSSHCommandResultBox: @unchecked Sendable {
+    let futureResult: EventLoopFuture<VPhoneSSHCommandResult>
+
+    private let promise: EventLoopPromise<VPhoneSSHCommandResult>
+    private let lock = NSLock()
+    private var completed = false
+
+    init(eventLoop: EventLoop) {
+        promise = eventLoop.makePromise(of: VPhoneSSHCommandResult.self)
+        futureResult = promise.futureResult
+    }
+
+    func succeed(_ value: VPhoneSSHCommandResult) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !completed else { return }
+        completed = true
+        promise.succeed(value)
+    }
+
+    func fail(_ error: Error) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !completed else { return }
+        completed = true
+        promise.fail(error)
+    }
+}
+
+private final class VPhoneSSHConnectionState: @unchecked Sendable {
+    let readyPromise: EventLoopPromise<Void>
+    var sshHandler: NIOSSHHandler?
+
+    init(eventLoop: EventLoop) {
+        readyPromise = eventLoop.makePromise(of: Void.self)
+    }
+}
+
+private final class VPhoneSSHConnectionHandler: ChannelInboundHandler, @unchecked Sendable {
+    typealias InboundIn = Any
+
+    let readyPromise: EventLoopPromise<Void>
+    var completed = false
+
+    init(readyPromise: EventLoopPromise<Void>) {
+        self.readyPromise = readyPromise
+    }
+
+    func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+        if event is UserAuthSuccessEvent {
+            if ProcessInfo.processInfo.environment["VPHONE_SSH_DEBUG"] == "1" {
+                FileHandle.standardError.write(Data("[ssh] auth success event\n".utf8))
+            }
+            succeedIfNeeded()
+        }
+        context.fireUserInboundEventTriggered(event)
+    }
+
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
+        failIfNeeded(error)
+        context.fireErrorCaught(error)
+    }
+
+    func channelInactive(context: ChannelHandlerContext) {
+        failIfNeeded(VPhoneSSHError.notConnected)
+        context.fireChannelInactive()
+    }
+
+    private func succeedIfNeeded() {
+        guard !completed else { return }
+        completed = true
+        readyPromise.succeed(())
+    }
+
+    private func failIfNeeded(_ error: Error) {
+        guard !completed else { return }
+        completed = true
+        readyPromise.fail(error)
+    }
+}
+
+private final class AcceptAllHostKeysDelegate: NIOSSHClientServerAuthenticationDelegate {
+    func validateHostKey(hostKey: NIOSSHPublicKey, validationCompletePromise: EventLoopPromise<Void>) {
+        validationCompletePromise.succeed(())
+    }
+}
+
+private final class VPhoneSSHErrorHandler: ChannelInboundHandler {
+    typealias InboundIn = Any
+
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
+        context.close(promise: nil)
     }
 }
